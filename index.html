@@ -3,94 +3,68 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Çiftlik Mobil App</title>
-
+<title>Çiftlik Yönetimi</title>
 <script src="https://unpkg.com/html5-qrcode"></script>
 
 <style>
-body{
-margin:0;
-font-family:Arial;
-background:#f2f3f7;
-}
-
+body{margin:0;font-family:Arial;background:#f2f3f7}
 header{
 background:linear-gradient(90deg,#7b1fa2,#512da8);
-color:white;
-padding:20px;
-text-align:center;
-font-size:20px;
-font-weight:bold;
+color:white;padding:20px;text-align:center;font-size:20px;font-weight:bold
 }
-
-.container{padding:15px}
+.container{padding:15px;padding-bottom:80px}
 
 .cards{
 display:grid;
 grid-template-columns:1fr 1fr;
 gap:12px;
-margin-bottom:15px;
+margin-bottom:15px
 }
 
 .cardBox{
-color:white;
-padding:20px;
-border-radius:16px;
-font-size:18px;
-font-weight:bold;
-box-shadow:0 4px 12px rgba(0,0,0,0.15);
+color:white;padding:20px;border-radius:16px;
+font-size:18px;font-weight:bold;
+box-shadow:0 4px 12px rgba(0,0,0,0.15)
 }
-
-.total{background:linear-gradient(135deg,#9c27b0,#673ab7)}
-.koyun{background:linear-gradient(135deg,#1976d2,#1565c0)}
-.koc{background:linear-gradient(135deg,#2e7d32,#1b5e20)}
-.kuzu{background:linear-gradient(135deg,#f57c00,#e65100)}
 
 .section{
-background:white;
-border-radius:16px;
-padding:15px;
-margin-bottom:15px;
-box-shadow:0 4px 12px rgba(0,0,0,0.08);
+background:white;border-radius:16px;padding:15px;
+margin-bottom:15px;box-shadow:0 4px 12px rgba(0,0,0,0.08)
 }
 
-.section h3{margin-top:0}
-
 .item{
-background:#fafafa;
-padding:12px;
-border-radius:12px;
-margin-bottom:10px;
-border-left:6px solid #ccc;
+background:#fafafa;padding:12px;
+border-radius:12px;margin-bottom:10px;
+border-left:6px solid #ccc
 }
 
 .kesimItem{border-left:6px solid red}
-.asiItem{border-left:6px solid orange}
+
+button{
+padding:12px;width:100%;margin-top:8px;
+background:#673ab7;color:white;
+border:none;border-radius:8px
+}
+
+input{
+width:100%;padding:10px;margin-top:6px;
+border-radius:6px;border:1px solid #ccc
+}
 
 .bottomNav{
-position:fixed;
-bottom:0;
-left:0;
-right:0;
-background:white;
-display:flex;
+position:fixed;bottom:0;left:0;right:0;
+background:white;display:flex;
 justify-content:space-around;
 padding:10px 0;
-box-shadow:0 -2px 8px rgba(0,0,0,0.1);
+box-shadow:0 -2px 8px rgba(0,0,0,0.1)
 }
 
 .bottomNav button{
-background:none;
-border:none;
-font-size:14px;
+background:none;border:none;font-size:14px
 }
 
 .hidden{display:none}
-
-#reader{
-width:100%;
-margin-top:10px;
-}
+#reader{width:100%;margin-top:10px}
 </style>
 </head>
 
@@ -102,35 +76,20 @@ margin-top:10px;
 
 <!-- ANA SAYFA -->
 <div id="homePanel">
-
-<div class="cards">
-<div class="cardBox total">
-Toplam<br><span id="toplam">0</span>
-</div>
-
-<div class="cardBox koyun">
-Koyun<br><span id="koyun">0</span>
-</div>
-
-<div class="cardBox koc">
-Koç<br><span id="koc">0</span>
-</div>
-
-<div class="cardBox kuzu">
-Kuzu<br><span id="kuzu">0</span>
-</div>
-</div>
+<div class="cards" id="turKartlari"></div>
 
 <div class="section">
-<h3>📉 Kesime Uygun Hayvanlar</h3>
+<h3>📉 Kesime Gidenler</h3>
 <div id="kesimListe"></div>
 </div>
-
-<div class="section">
-<h3>📅 Yaklaşan Aşılar</h3>
-<div id="asiListe"></div>
 </div>
 
+<!-- LİSTE PANEL -->
+<div id="listePanel" class="hidden">
+<div class="section">
+<h3>Tüm Hayvanlar</h3>
+<div id="liste"></div>
+</div>
 </div>
 
 <!-- QR PANEL -->
@@ -143,18 +102,21 @@ Kuzu<br><span id="kuzu">0</span>
 <!-- EKLE PANEL -->
 <div id="eklePanel" class="hidden">
 <h3>Hayvan Ekle</h3>
-<input id="qr" placeholder="QR_ID"><br><br>
-<input id="kupe" placeholder="Küpe No"><br><br>
-<input id="tur" placeholder="Tür (Koyun, Koç, Kuzu)"><br><br>
-<input id="kilo" type="number" placeholder="İlk Kilo"><br><br>
+<input id="qr" placeholder="QR_ID">
+<input id="kupe" placeholder="Küpe No">
+<input id="tur" placeholder="Tür">
+<input id="kilo" type="number" placeholder="İlk Kilo">
 <button onclick="hayvanEkle()">Kaydet</button>
 </div>
 
+<!-- KART PANEL -->
+<div id="kartPanel" class="hidden section"></div>
+
 </div>
 
-<!-- ALT MENU -->
 <div class="bottomNav">
-<button onclick="panelAc('home')">Ana Sayfa</button>
+<button onclick="panelAc('home')">Ana</button>
+<button onclick="panelAc('liste')">Liste</button>
 <button onclick="panelAc('qr')">Tara</button>
 <button onclick="panelAc('ekle')">Ekle</button>
 </div>
@@ -162,82 +124,116 @@ Kuzu<br><span id="kuzu">0</span>
 <script>
 
 const API="https://script.google.com/macros/s/AKfycbwUhg_knEiRUulKxjzbdVRQXX6qFa9ypzhkUDCV8miaoOnggHvr4ADLMeTvSR6H0XA_/exec";
+let html5Qr;
 
 /* PANEL */
 function panelAc(p){
-
 homePanel.classList.add("hidden");
+listePanel.classList.add("hidden");
 qrPanel.classList.add("hidden");
 eklePanel.classList.add("hidden");
+kartPanel.classList.add("hidden");
 
 if(p=="home") homePanel.classList.remove("hidden");
-if(p=="qr"){ 
-qrPanel.classList.remove("hidden");
-kamerayiBaslat();
-}
+if(p=="liste"){listePanel.classList.remove("hidden");listeYukle();}
+if(p=="qr"){qrPanel.classList.remove("hidden");kamerayiBaslat();}
 if(p=="ekle") eklePanel.classList.remove("hidden");
 }
 
 /* DASHBOARD */
 async function dashboard(){
-
 const res=await fetch(API,{method:"POST",body:JSON.stringify({tip:"tumHayvanlar"})});
 const data=await res.json();
 
-let toplam=0,koyun=0,koc=0,kuzu=0;
+let turSayilari={};
 let kesimHTML="";
-let asiHTML="";
 
 data.forEach(h=>{
 
-if(h.durum!="KESIM"){
-toplam++;
-}
-
-if(h.tur=="Koyun") koyun++;
-if(h.tur=="Koç") koc++;
-if(h.tur=="Kuzu") kuzu++;
+if(!turSayilari[h.tur]) turSayilari[h.tur]=0;
+turSayilari[h.tur]++;
 
 if(h.durum=="KESIM"){
 kesimHTML+=`
 <div class="item kesimItem">
 <b>${h.qr}</b><br>
-Önceki: ${h.ilkKilo} kg → Şimdi: ${h.sonKilo} kg<br>
-Kilo Kaybı (${h.fark} kg)
+${h.ilkKilo} kg → ${h.sonKilo} kg
 </div>`;
 }
-
-if(h.sonrakiAsi && h.sonrakiAsi!="-"){
-asiHTML+=`
-<div class="item asiItem">
-<b>${h.qr}</b><br>
-${h.sonrakiAsi}
-</div>`;
-}
-
 });
 
-toplam.innerText=toplam;
-koyun.innerText=koyun;
-koc.innerText=koc;
-kuzu.innerText=kuzu;
+let kartHTML="";
+for(let tur in turSayilari){
+kartHTML+=`
+<div class="cardBox" style="background:linear-gradient(135deg,#1976d2,#512da8)">
+${tur}<br>${turSayilari[tur]}
+</div>`;
+}
 
+turKartlari.innerHTML=kartHTML;
 kesimListe.innerHTML=kesimHTML;
-asiListe.innerHTML=asiHTML;
+}
 
+/* LİSTE */
+async function listeYukle(){
+const res=await fetch(API,{method:"POST",body:JSON.stringify({tip:"tumHayvanlar"})});
+const data=await res.json();
+
+let html="";
+data.forEach(h=>{
+html+=`
+<div class="item" onclick="hayvanGetir('${h.qr}')">
+<b>${h.qr}</b> (${h.tur})<br>
+İlk: ${h.ilkKilo} | Son: ${h.sonKilo}
+</div>`;
+});
+
+liste.innerHTML=html;
+}
+
+/* HAYVAN GETİR */
+async function hayvanGetir(qr){
+const res=await fetch(API,{method:"POST",body:JSON.stringify({tip:"hayvanGetir",qr:qr})});
+const h=await res.json();
+
+if(!h) return;
+
+kartPanel.classList.remove("hidden");
+kartPanel.innerHTML=`
+<h3>${h.qr}</h3>
+Tür: ${h.tur}<br>
+Küpe: ${h.kupe}<br>
+İlk Kilo: ${h.ilkKilo}<br>
+Son Kilo: ${h.sonKilo}<br>
+Durum: ${h.durum}<br>
+<input id="yeniKilo" type="number" placeholder="Yeni Kilo">
+<button onclick="kiloGuncelle('${h.qr}')">Kilo Güncelle</button>
+`;
+}
+
+/* KİLO GÜNCELLE */
+async function kiloGuncelle(qr){
+let kilo=document.getElementById("yeniKilo").value;
+
+await fetch(API,{
+method:"POST",
+body:JSON.stringify({tip:"kiloGuncelle",qr:qr,kilo:kilo})
+});
+
+alert("Güncellendi");
+dashboard();
+panelAc("home");
 }
 
 /* QR */
-let html5Qr;
-
 function kamerayiBaslat(){
 html5Qr=new Html5Qrcode("reader");
 html5Qr.start(
 { facingMode:"environment" },
 { fps:10, qrbox:250 },
 (qrCodeMessage)=>{
-alert("Bulundu: "+qrCodeMessage);
 kamerayiKapat();
+hayvanGetir(qrCodeMessage);
 }
 );
 }
