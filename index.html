@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
 <title>Dedeköy Çiftliği</title>
 
 <link rel="manifest" href="manifest.json">
@@ -11,70 +11,78 @@
 <style>
 body{
   margin:0;
-  font-family: 'Segoe UI', sans-serif;
-  background:#f4f6f9;
+  font-family:Arial;
+  background:#f1f4f2;
 }
-
 header{
-  background:linear-gradient(135deg,#1b5e20,#2e7d32);
+  background:#1b5e20;
   color:white;
-  padding:20px;
-  font-size:20px;
+  padding:18px;
   text-align:center;
+  font-size:20px;
   font-weight:bold;
 }
+.container{padding:15px}
 
-.container{
-  padding:15px;
-  padding-bottom:90px;
+.stat-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
 }
-
+.stat{
+  background:white;
+  padding:15px;
+  border-radius:12px;
+  text-align:center;
+  box-shadow:0 3px 8px rgba(0,0,0,0.08);
+}
+.stat h2{margin:5px 0;color:#1b5e20}
 .card{
   background:white;
-  border-radius:15px;
+  margin-top:12px;
   padding:15px;
-  margin-bottom:15px;
-  box-shadow:0 5px 15px rgba(0,0,0,0.08);
+  border-radius:12px;
+  box-shadow:0 3px 8px rgba(0,0,0,0.08);
 }
-
 button{
+  width:100%;
+  padding:12px;
+  margin-top:8px;
   background:#2e7d32;
   color:white;
   border:none;
-  padding:12px;
-  width:100%;
-  border-radius:10px;
-  margin-top:10px;
+  border-radius:8px;
   font-size:15px;
 }
-
 input,select{
   width:100%;
   padding:10px;
-  margin-top:8px;
-  border-radius:8px;
-  border:1px solid #ddd;
+  margin-top:6px;
+  border-radius:6px;
+  border:1px solid #ccc;
 }
-
-.bottom-nav{
+.floating{
   position:fixed;
-  bottom:0;
-  width:100%;
-  background:white;
-  display:flex;
-  justify-content:space-around;
-  padding:10px 0;
-  box-shadow:0 -2px 10px rgba(0,0,0,0.1);
-}
-
-.nav-btn{
+  bottom:20px;
+  right:20px;
+  width:60px;
+  height:60px;
+  background:#1b5e20;
+  color:white;
+  border-radius:50%;
+  font-size:28px;
   text-align:center;
-  font-size:13px;
-  color:#2e7d32;
+  line-height:60px;
+  box-shadow:0 4px 10px rgba(0,0,0,0.3);
 }
-
+.list-item{
+  padding:10px;
+  border-bottom:1px solid #eee;
+}
 .kesim{color:red;font-weight:bold}
 .besi{color:green;font-weight:bold}
+#reader{width:100%}
+.hidden{display:none}
 </style>
 </head>
 
@@ -82,136 +90,136 @@ input,select{
 
 <header>DEDEKÖY ÇİFTLİĞİ</header>
 
-<div class="container" id="content">
+<div class="container">
+
+<div class="stat-grid">
+  <div class="stat">
+    <div>Toplam</div>
+    <h2 id="toplam">0</h2>
+  </div>
+  <div class="stat">
+    <div>KESİM</div>
+    <h2 id="kesimSayi">0</h2>
+  </div>
+</div>
 
 <div class="card">
-<h3>Genel Durum</h3>
-<div id="toplam"></div>
+<h3>Hayvan Listesi</h3>
+<div id="liste"></div>
+</div>
+
+<div class="card hidden" id="ekleKart">
+<h3>Yeni Hayvan Ekle</h3>
+<input id="qr" placeholder="QR / Küpe No">
+<select id="tur">
+<option>Koyun</option>
+<option>Koç</option>
+<option>Kuzu</option>
+<option>Dana</option>
+<option>Düve</option>
+<option>Boğa</option>
+</select>
+<button onclick="hayvanEkle()">Kaydet</button>
+</div>
+
+<div class="card hidden" id="qrKart">
+<h3>QR Okut</h3>
+<div id="reader"></div>
+<button onclick="kameraKapat()">Kapat</button>
 </div>
 
 </div>
 
-<div class="bottom-nav">
-  <div class="nav-btn" onclick="dashboard()">Ana</div>
-  <div class="nav-btn" onclick="listele()">Liste</div>
-  <div class="nav-btn" onclick="hayvanEkleEkran()">+ Ekle</div>
-  <div class="nav-btn" onclick="qrAc()">QR</div>
-</div>
+<div class="floating" onclick="menuToggle()">+</div>
 
 <script>
-  function hayvanEkleEkran(){
-  document.getElementById("content").innerHTML=`
-  <div class="card">
-    <h3>Yeni Hayvan Ekle</h3>
-    <input id="qr" placeholder="QR Kodu (DK-0001)">
-    <input id="kupe" placeholder="Küpe No">
-    <select id="tur">
-      <option value="Koyun">Koyun</option>
-      <option value="Kuzu">Kuzu</option>
-      <option value="Koç">Koç</option>
-      <option value="Düve">Düve</option>
-      <option value="Dana">Dana</option>
-      <option value="İnek">İnek</option>
-      <option value="Boğa">Boğa</option>
-    </select>
-    <button onclick="hayvanEkle()">Kaydet</button>
-  </div>`;
+
+const API_URL="https://script.google.com/macros/s/AKfycbwUhg_knEiRUulKxjzbdVRQXX6qFa9ypzhkUDCV8miaoOnggHvr4ADLMeTvSR6H0XA_/exec";
+
+let scanner;
+
+function menuToggle(){
+  document.getElementById("ekleKart").classList.toggle("hidden");
 }
 
-async function hayvanEkle(){
-  const qr = document.getElementById("qr").value;
-  const kupe = document.getElementById("kupe").value;
-  const tur = document.getElementById("tur").value;
-
-  await fetch(API_URL,{
-    method:"POST",
-    body: JSON.stringify({
-      tip:"hayvanEkle",
-      qr:qr,
-      kupe:kupe,
-      tur:tur
-    })
-  });
-
-  alert("Hayvan eklendi");
-  dashboard();
-}
-
-const API_URL = "https://script.google.com/macros/s/AKfycbwUhg_knEiRUulKxjzbdVRQXX6qFa9ypzhkUDCV8miaoOnggHvr4ADLMeTvSR6H0XA_/exec";
-
-async function dashboard(){
-  document.getElementById("content").innerHTML=`
-  <div class="card">
-  <h3>Genel Durum</h3>
-  <div id="toplam"></div>
-  </div>`;
-  listeVerisi();
-}
-
-async function listeVerisi(){
+async function dashboardYukle(){
   const response = await fetch(API_URL,{
     method:"POST",
-    body: JSON.stringify({tip:"tumHayvanlar"})
+    body:JSON.stringify({tip:"dashboard"})
   });
   const data = await response.json();
-  document.getElementById("toplam").innerHTML=
-  "Toplam Hayvan: "+data.length;
+  document.getElementById("toplam").innerText=data.toplam;
+  document.getElementById("kesimSayi").innerText=data.kesim.length;
 }
 
-async function listele(){
+async function listeYukle(){
   const response = await fetch(API_URL,{
     method:"POST",
-    body: JSON.stringify({tip:"tumHayvanlar"})
+    body:JSON.stringify({tip:"tumHayvanlar"})
   });
   const data = await response.json();
 
   let html="";
   data.forEach(h=>{
     html+=`
-    <div class="card">
-      <b>${h.kupe}</b><br>
-      Tür: ${h.tur}<br>
-      Kilo: ${h.sonKilo || "-"}<br>
-      Durum: <span class="${h.durum=='KESIM'?'kesim':'besi'}">${h.durum}</span>
-    </div>`;
+      <div class="list-item">
+        ${h.qr} - ${h.tur}
+        <div class="${h.durum=='KESIM'?'kesim':'besi'}">
+          ${h.durum}
+        </div>
+      </div>
+    `;
   });
 
-  document.getElementById("content").innerHTML=html;
+  document.getElementById("liste").innerHTML=html;
 }
 
-function qrAc(){
-  document.getElementById("content").innerHTML=`
-  <div class="card">
-    <div id="reader"></div>
-  </div>`;
+async function hayvanEkle(){
+  const qr=document.getElementById("qr").value;
+  const tur=document.getElementById("tur").value;
 
-  const qr = new Html5Qrcode("reader");
-  qr.start({facingMode:"environment"},
-  {fps:10,qrbox:250},
-  qrCodeMessage=>{
-    hayvanGetir(qrCodeMessage);
-    qr.stop();
-  });
-}
-
-async function hayvanGetir(qr){
-  const response = await fetch(API_URL,{
+  await fetch(API_URL,{
     method:"POST",
-    body: JSON.stringify({tip:"hayvanGetir",qr:qr})
+    body:JSON.stringify({
+      tip:"hayvanEkle",
+      qr:qr,
+      kupe:qr,
+      tur:tur
+    })
   });
-  const data = await response.json();
 
-  document.getElementById("content").innerHTML=`
-  <div class="card">
-    <h3>Hayvan Kartı</h3>
-    Küpe: ${data.kupe}<br>
-    Tür: ${data.tur}<br>
-    Son Kilo: ${data.sonKilo || "-"}<br>
-    Durum: <span class="${data.durum=='KESIM'?'kesim':'besi'}">${data.durum}</span>
-  </div>`;
+  document.getElementById("qr").value="";
+  document.getElementById("ekleKart").classList.add("hidden");
+
+  dashboardYukle();
+  listeYukle();
 }
 
-dashboard();
+function qrBaslat(){
+  document.getElementById("qrKart").classList.remove("hidden");
+
+  scanner=new Html5Qrcode("reader");
+  scanner.start(
+    {facingMode:"environment"},
+    {fps:10,qrbox:250},
+    qr=>{
+      document.getElementById("qr").value=qr;
+      kameraKapat();
+      document.getElementById("ekleKart").classList.remove("hidden");
+    }
+  );
+}
+
+function kameraKapat(){
+  if(scanner){
+    scanner.stop();
+    scanner.clear();
+  }
+  document.getElementById("qrKart").classList.add("hidden");
+}
+
+dashboardYukle();
+listeYukle();
 
 </script>
 
