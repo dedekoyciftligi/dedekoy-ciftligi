@@ -4,139 +4,141 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dedeköy Çiftliği</title>
-
 <script src="https://unpkg.com/html5-qrcode"></script>
 
 <style>
-*{box-sizing:border-box}
-body{
-  font-family:Arial;
-  margin:0;
-  background:#f2f2f2;
-}
+body{margin:0;font-family:Arial;background:#f2f2f2}
 header{
-  background:#1b5e20;
-  color:white;
-  padding:15px;
-  text-align:center;
-  font-size:20px;
+background:linear-gradient(45deg,#7b1fa2,#512da8);
+color:white;
+padding:20px;
+text-align:center;
+font-size:22px;
 }
-.card{
-  background:white;
-  margin:10px;
-  padding:15px;
-  border-radius:12px;
-  box-shadow:0 2px 6px rgba(0,0,0,0.1);
+
+.container{padding:10px}
+
+.box{
+color:white;
+padding:20px;
+border-radius:15px;
+margin:8px 0;
+font-size:18px;
 }
-button{
-  padding:14px;
-  width:100%;
-  margin-top:10px;
-  background:#2e7d32;
-  color:white;
-  border:none;
-  border-radius:8px;
-  font-size:16px;
+
+.purple{background:linear-gradient(45deg,#8e24aa,#5e35b1)}
+.blue{background:linear-gradient(45deg,#1e88e5,#1565c0)}
+.green{background:linear-gradient(45deg,#43a047,#2e7d32)}
+.orange{background:linear-gradient(45deg,#fb8c00,#ef6c00)}
+
+.section{
+background:white;
+margin:10px 0;
+padding:15px;
+border-radius:15px;
 }
-.stop{background:#c62828}
-input{
-  width:100%;
-  padding:12px;
-  margin-top:8px;
-  font-size:16px;
+
+.section h3{margin-top:0}
+
+.red{color:red;font-weight:bold}
+.yellow{color:#ff8f00;font-weight:bold}
+
+.bottom-menu{
+position:fixed;
+bottom:0;
+width:100%;
+background:white;
+display:flex;
+justify-content:space-around;
+padding:10px 0;
+border-top:1px solid #ddd;
 }
-#reader{
-  width:100%;
-  margin-top:10px;
+
+.bottom-menu div{
+text-align:center;
+font-size:14px;
 }
-.kesim{color:red;font-weight:bold}
-.besi{color:green;font-weight:bold}
 </style>
 </head>
 
 <body>
 
-<header>DEDEKÖY ÇİFTLİĞİ</header>
+<header>
+🐑 Çiftlik Yönetimi<br>
+<small>Dedeköy Çiftliği</small>
+</header>
 
-<div class="card">
-<h3>QR İşlemleri</h3>
-<button onclick="startQR()">QR Kamerayı Aç</button>
-<button onclick="stopQR()" class="stop">Kamerayı Kapat</button>
-<div id="reader"></div>
+<div class="container">
+
+<div class="box purple">
+Toplam Hayvan<br>
+<span id="toplam">0</span>
 </div>
 
-<div class="card">
-<h3>Manuel Küpe / QR Ara</h3>
-<input type="text" id="arama" placeholder="QR veya Küpe No">
-<button onclick="hayvanGetir()">Hayvanı Getir</button>
+<div class="box blue">
+🐑 Koyun: <span id="koyun">0</span>
 </div>
 
-<div id="hayvanKart"></div>
+<div class="box green">
+🐏 Koç: <span id="koc">0</span>
+</div>
+
+<div class="box orange">
+🐑 Kuzu: <span id="kuzu">0</span>
+</div>
+
+<div class="section">
+<h3>🔻 Kesime Uygun Hayvanlar</h3>
+<div id="kesimListe"></div>
+</div>
+
+<div class="section">
+<h3>📅 Yaklaşan Aşılar</h3>
+<div id="asiListe"></div>
+</div>
+
+</div>
+
+<div class="bottom-menu">
+<div>🏠<br>Ana Sayfa</div>
+<div>📷<br>Tara</div>
+<div>➕<br>Ekle</div>
+<div>📋<br>Liste</div>
+</div>
 
 <script>
 
 const API_URL = "https://script.google.com/macros/s/AKfycbwjE_8OBm_LmAGEgjl8S6uiyW4kknlW7N5X84Pt95D7WK-IF8Yelqn-UA73-qK0eFXI/exec";
 
-let html5QrCode;
-let kameraAcik = false;
+async function dashboardYukle(){
 
-function startQR(){
-  if(kameraAcik) return;
+const response = await fetch(API_URL,{
+method:"POST",
+body: JSON.stringify({tip:"dashboard"})
+});
 
-  html5QrCode = new Html5Qrcode("reader");
+const data = await response.json();
 
-  html5QrCode.start(
-    { facingMode: "environment" },
-    { fps: 10, qrbox: 250 },
-    qrMessage => {
-      document.getElementById("arama").value = qrMessage;
-      stopQR();
-      hayvanGetir();
-    }
-  );
+document.getElementById("toplam").innerText = data.toplam;
+document.getElementById("koyun").innerText = data.koyun;
+document.getElementById("koc").innerText = data.koc;
+document.getElementById("kuzu").innerText = data.kuzu;
 
-  kameraAcik = true;
+let kesimHTML="";
+data.kesim.forEach(h=>{
+kesimHTML += `<div class="red">${h.qr} - ${h.sonKilo} kg</div>`;
+});
+document.getElementById("kesimListe").innerHTML = kesimHTML;
+
+let asiHTML="";
+data.asi.forEach(a=>{
+asiHTML += `<div class="yellow">${a.qr} - ${a.tarih}</div>`;
+});
+document.getElementById("asiListe").innerHTML = asiHTML;
+
 }
 
-function stopQR(){
-  if(!kameraAcik) return;
-
-  html5QrCode.stop().then(() => {
-    html5QrCode.clear();
-    document.getElementById("reader").innerHTML="";
-    kameraAcik = false;
-  }).catch(()=>{});
-}
-
-async function hayvanGetir(){
-  const arama = document.getElementById("arama").value;
-
-  const response = await fetch(API_URL,{
-    method:"POST",
-    body: JSON.stringify({
-      tip:"hayvanGetir",
-      qr: arama
-    })
-  });
-
-  const data = await response.json();
-
-  if(!data){
-    alert("Hayvan bulunamadı");
-    return;
-  }
-
-  document.getElementById("hayvanKart").innerHTML = `
-  <div class="card">
-  <h3>Hayvan Kartı</h3>
-  QR: ${data.qr}<br>
-  Küpe: ${data.kupe}<br>
-  Tür: ${data.tur}<br>
-  Son Kilo: ${data.sonKilo}<br>
-  Durum: <span class="${data.durum == 'KESIM' ? 'kesim':'besi'}">${data.durum}</span>
-  </div>
-  `;
-}
+dashboardYukle();
 
 </script>
 
