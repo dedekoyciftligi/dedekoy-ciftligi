@@ -12,44 +12,51 @@ header{background:#1b5e20;color:white;padding:18px;text-align:center;font-size:2
 .container{padding:15px}
 .card{background:white;margin-bottom:15px;padding:15px;border-radius:14px;box-shadow:0 4px 10px rgba(0,0,0,0.08)}
 button{padding:12px;width:100%;margin-top:8px;background:#2e7d32;color:white;border:none;border-radius:8px}
-input,select{width:100%;padding:10px;margin-top:6px;border-radius:6px;border:1px solid #ccc}
+input{width:100%;padding:10px;margin-top:6px;border-radius:6px;border:1px solid #ccc}
 .list-item{padding:10px;border-bottom:1px solid #eee;cursor:pointer}
 .list-item:hover{background:#f0f0f0}
 .kesim{color:red;font-weight:bold}
 .besi{color:green;font-weight:bold}
 .hidden{display:none}
 #reader{width:100%;margin-top:10px}
+.menu button{margin-bottom:6px}
+.artis{color:green;font-weight:bold}
+.dusus{color:red;font-weight:bold}
 </style>
 </head>
 
 <body>
 
 <header>DEDEKÖY ÇİFTLİĞİ</header>
+
 <div class="container">
 
-<!-- DASHBOARD -->
-<div class="card">
-<b>Toplam:</b> <span id="toplam">0</span> |
-<b>KESİM:</b> <span id="kesimSayi">0</span>
+<div class="card menu">
+<button onclick="panelGoster('dashboard')">Ana Sayfa</button>
+<button onclick="panelGoster('liste')">Hayvan Listesi</button>
+<button onclick="panelGoster('arama')">Hayvan Ara</button>
 </div>
 
-<!-- ARAMA PANEL -->
-<div class="card">
+<div id="dashboardPanel" class="card">
+<b>Toplam Hayvan:</b> <span id="toplam">0</span>
+</div>
+
+<div id="listePanel" class="card hidden">
+<h3>Hayvan Listesi</h3>
+<input id="listeArama" placeholder="Ara..." onkeyup="listeFiltre()">
+<div id="liste"></div>
+</div>
+
+<div id="aramaPanel" class="card hidden">
 <h3>Hayvan Ara</h3>
 <input id="arama" placeholder="QR / Küpe No">
 <button onclick="hayvanGetir()">Ara</button>
 <button onclick="qrBaslat()">QR Okut</button>
+
 <div id="reader" class="hidden"></div>
+<button id="qrKapatBtn" class="hidden" onclick="qrKapat()">QR Kapat</button>
 </div>
 
-<!-- LİSTE PANEL -->
-<div class="card">
-<h3>Hayvan Listesi</h3>
-<input id="listeArama" placeholder="Liste içinde ara..." onkeyup="listeFiltre()">
-<div id="liste"></div>
-</div>
-
-<!-- HAYVAN KART -->
 <div id="kartPanel" class="card hidden"></div>
 
 </div>
@@ -57,120 +64,147 @@ input,select{width:100%;padding:10px;margin-top:6px;border-radius:6px;border:1px
 <script>
 
 const API_URL="https://script.google.com/macros/s/AKfycbwUhg_knEiRUulKxjzbdVRQXX6qFa9ypzhkUDCV8miaoOnggHvr4ADLMeTvSR6H0XA_/exec";
-
 let seciliQR=null;
 let tumListe=[];
+let qrScanner=null;
+let mevcutKilo=0;
+
+/* PANEL */
+function panelGoster(panel){
+document.getElementById("dashboardPanel").classList.add("hidden");
+document.getElementById("listePanel").classList.add("hidden");
+document.getElementById("aramaPanel").classList.add("hidden");
+
+if(panel=="dashboard")
+document.getElementById("dashboardPanel").classList.remove("hidden");
+
+if(panel=="liste")
+document.getElementById("listePanel").classList.remove("hidden");
+
+if(panel=="arama")
+document.getElementById("aramaPanel").classList.remove("hidden");
+}
 
 /* DASHBOARD */
 async function dashboardYukle(){
-  const res=await fetch(API_URL,{method:"POST",body:JSON.stringify({tip:"dashboard"})});
-  const data=await res.json();
-  document.getElementById("toplam").innerText=data.toplam;
-  document.getElementById("kesimSayi").innerText=data.kesim ? data.kesim.length : 0;
+const res=await fetch(API_URL,{method:"POST",body:JSON.stringify({tip:"dashboard"})});
+const data=await res.json();
+document.getElementById("toplam").innerText=data.toplam;
 }
 
-/* TÜM LİSTE */
+/* LİSTE */
 async function listeYukle(){
-  const res=await fetch(API_URL,{method:"POST",body:JSON.stringify({tip:"tumHayvanlar"})});
-  tumListe=await res.json();
-  listeRender(tumListe);
+const res=await fetch(API_URL,{method:"POST",body:JSON.stringify({tip:"tumHayvanlar"})});
+tumListe=await res.json();
+listeRender(tumListe);
 }
 
 function listeRender(data){
-  let html="";
-  data.forEach(h=>{
-    html+=`
-      <div class="list-item" onclick="kartAc('${h.qr}')">
-        ${h.qr} - ${h.tur}
-        <div class="${h.durum=='KESIM'?'kesim':'besi'}">${h.durum}</div>
-      </div>
-    `;
-  });
-  document.getElementById("liste").innerHTML=html;
+let html="";
+data.forEach(h=>{
+html+=`
+<div class="list-item" onclick="kartAc('${h.qr}')">
+${h.qr} - ${h.tur}
+<div class="${h.durum=='KESIM'?'kesim':'besi'}">${h.durum}</div>
+</div>
+`;
+});
+document.getElementById("liste").innerHTML=html;
 }
 
 function listeFiltre(){
-  let q=document.getElementById("listeArama").value.toLowerCase();
-  let filtre=tumListe.filter(h=>h.qr.toLowerCase().includes(q) || h.kupe.toLowerCase().includes(q));
-  listeRender(filtre);
+let q=document.getElementById("listeArama").value.toLowerCase();
+let filtre=tumListe.filter(h=>h.qr.toLowerCase().includes(q));
+listeRender(filtre);
 }
 
 /* HAYVAN GETİR */
 async function hayvanGetir(){
-  const q=document.getElementById("arama").value;
-  kartAc(q);
+kartAc(document.getElementById("arama").value);
 }
 
 async function kartAc(qr){
-  const res=await fetch(API_URL,{method:"POST",body:JSON.stringify({tip:"hayvanGetir",qr:qr})});
-  const data=await res.json();
-  if(!data){alert("Bulunamadı");return;}
-  seciliQR=data.qr;
+const res=await fetch(API_URL,{method:"POST",body:JSON.stringify({tip:"hayvanGetir",qr:qr})});
+const data=await res.json();
+if(!data){alert("Bulunamadı");return;}
 
-  document.getElementById("kartPanel").classList.remove("hidden");
-  document.getElementById("kartPanel").innerHTML=`
-    <h3>Hayvan Kartı</h3>
-    <b>QR:</b> ${data.qr}<br>
-    <b>Tür:</b> ${data.tur}<br>
-    <b>Son Kilo:</b> ${data.sonKilo || "-"}<br>
-    <b>Durum:</b> <span class="${data.durum=='KESIM'?'kesim':'besi'}">${data.durum}</span>
-    <hr>
-    <h4>Kilo Güncelle</h4>
-    <input id="yeniKilo" type="number" placeholder="Yeni kilo">
-    <button onclick="kiloEkle()">Kaydet</button>
-    <h4>Aşı Güncelle</h4>
-    <input id="asiAdi" placeholder="Aşı adı">
-    <input id="asiTarih" type="date">
-    <button onclick="asiEkle()">Kaydet</button>
-  `;
+seciliQR=data.qr;
+mevcutKilo=Number(data.sonKilo)||0;
+
+document.getElementById("kartPanel").classList.remove("hidden");
+document.getElementById("kartPanel").innerHTML=`
+<h3>Hayvan Kartı</h3>
+<b>QR:</b> ${data.qr}<br>
+<b>Tür:</b> ${data.tur}<br>
+<b>Son Kilo:</b> ${mevcutKilo} kg<br>
+<b>Durum:</b> <span class="${data.durum=='KESIM'?'kesim':'besi'}">${data.durum}</span>
+<hr>
+<h4>Kilo Güncelle</h4>
+<input id="yeniKilo" type="number" placeholder="Yeni kilo">
+<button onclick="kiloEkle()">Kaydet</button>
+<div id="kiloSonuc"></div>
+`;
 }
 
 /* KİLO EKLE */
 async function kiloEkle(){
-  await fetch(API_URL,{
-    method:"POST",
-    body:JSON.stringify({
-      tip:"kiloGuncelle",
-      qr:seciliQR,
-      kilo:document.getElementById("yeniKilo").value
-    })
-  });
-  alert("Kilo güncellendi");
-  dashboardYukle();
-  listeYukle();
-}
 
-/* AŞI EKLE */
-async function asiEkle(){
-  await fetch(API_URL,{
-    method:"POST",
-    body:JSON.stringify({
-      tip:"asiEkle",
-      qr:seciliQR,
-      asi:document.getElementById("asiAdi").value,
-      sonraki:document.getElementById("asiTarih").value
-    })
-  });
-  alert("Aşı kaydedildi");
+let yeni=Number(document.getElementById("yeniKilo").value);
+let fark=yeni-mevcutKilo;
+
+await fetch(API_URL,{
+method:"POST",
+body:JSON.stringify({
+tip:"kiloGuncelle",
+qr:seciliQR,
+kilo:yeni
+})
+});
+
+let sonuc="";
+if(fark>0)
+sonuc=`<div class="artis">+${fark} kg ↑</div>`;
+else if(fark<0)
+sonuc=`<div class="dusus">${fark} kg ↓</div>`;
+else
+sonuc=`Değişim yok`;
+
+document.getElementById("kiloSonuc").innerHTML=sonuc;
+mevcutKilo=yeni;
+
+dashboardYukle();
+listeYukle();
 }
 
 /* QR */
 function qrBaslat(){
-  document.getElementById("reader").classList.remove("hidden");
-  const qr=new Html5Qrcode("reader");
-  qr.start({facingMode:"environment"}, {fps:10,qrbox:250},
-    qrCodeMessage=>{
-      document.getElementById("arama").value=qrCodeMessage;
-      qr.stop();
-      document.getElementById("reader").classList.add("hidden");
-      kartAc(qrCodeMessage);
-    });
+document.getElementById("reader").classList.remove("hidden");
+document.getElementById("qrKapatBtn").classList.remove("hidden");
+
+qrScanner=new Html5Qrcode("reader");
+qrScanner.start({facingMode:"environment"},{fps:10,qrbox:250},
+qrCodeMessage=>{
+document.getElementById("arama").value=qrCodeMessage;
+qrKapat();
+kartAc(qrCodeMessage);
+});
+}
+
+function qrKapat(){
+if(qrScanner){
+qrScanner.stop().then(()=>{
+qrScanner.clear();
+qrScanner=null;
+});
+}
+document.getElementById("reader").classList.add("hidden");
+document.getElementById("qrKapatBtn").classList.add("hidden");
 }
 
 dashboardYukle();
 listeYukle();
+panelGoster("dashboard");
 
 </script>
-
 </body>
 </html>
