@@ -4,44 +4,41 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dedeköy Çiftliği</title>
-<script src="https://unpkg.com/html5-qrcode"></script>
 
 <style>
 body{margin:0;font-family:Arial;background:#f2f2f2}
 header{
-background:linear-gradient(45deg,#7b1fa2,#512da8);
+background:#4a148c;
 color:white;
 padding:20px;
 text-align:center;
-font-size:22px;
+font-size:20px;
 }
 
-.container{padding:10px}
+#icerik{padding:15px;margin-bottom:70px}
 
-.box{
-color:white;
-padding:20px;
-border-radius:15px;
-margin:8px 0;
-font-size:18px;
-}
-
-.purple{background:linear-gradient(45deg,#8e24aa,#5e35b1)}
-.blue{background:linear-gradient(45deg,#1e88e5,#1565c0)}
-.green{background:linear-gradient(45deg,#43a047,#2e7d32)}
-.orange{background:linear-gradient(45deg,#fb8c00,#ef6c00)}
-
-.section{
+.card{
 background:white;
-margin:10px 0;
 padding:15px;
 border-radius:15px;
+margin-bottom:10px;
 }
 
-.section h3{margin-top:0}
+button{
+width:100%;
+padding:12px;
+margin-top:10px;
+background:#2e7d32;
+color:white;
+border:none;
+border-radius:8px;
+}
 
-.red{color:red;font-weight:bold}
-.yellow{color:#ff8f00;font-weight:bold}
+input,select{
+width:100%;
+padding:10px;
+margin-top:5px;
+}
 
 .bottom-menu{
 position:fixed;
@@ -58,165 +55,117 @@ border-top:1px solid #ddd;
 text-align:center;
 font-size:14px;
 }
+
+.kesim{color:red;font-weight:bold}
+.besi{color:green;font-weight:bold}
 </style>
 </head>
 
 <body>
 
-<header>
-🐑 Çiftlik Yönetimi<br>
-<small>Dedeköy Çiftliği</small>
-</header>
+<header>🐑 Dedeköy Çiftliği</header>
 
-<div class="container" id="icerik">
-
-<div class="box purple">
-Toplam Hayvan<br>
-<span id="toplam">0</span>
-</div>
-
-<div class="box blue">
-🐑 Koyun: <span id="koyun">0</span>
-</div>
-
-<div class="box green">
-🐏 Koç: <span id="koc">0</span>
-</div>
-
-<div class="box orange">
-🐑 Kuzu: <span id="kuzu">0</span>
-</div>
-
-<div class="section">
-<h3>🔻 Kesime Uygun Hayvanlar</h3>
-<div id="kesimListe"></div>
-</div>
-
-<div class="section">
-<h3>📅 Yaklaşan Aşılar</h3>
-<div id="asiListe"></div>
-</div>
-
-</div>
+<div id="icerik"></div>
 
 <div class="bottom-menu">
-<div onclick="sayfaGoster('anasayfa')">🏠<br>Ana Sayfa</div>
-<div onclick="sayfaGoster('tara')">📷<br>Tara</div>
-<div onclick="sayfaGoster('ekle')">➕<br>Ekle</div>
-<div onclick="sayfaGoster('liste')">📋<br>Liste</div>
+<div onclick="anasayfa()">🏠<br>Ana</div>
+<div onclick="ekle()">➕<br>Ekle</div>
+<div onclick="liste()">📋<br>Liste</div>
 </div>
 
 <script>
 
 const API_URL = "https://script.google.com/macros/s/AKfycbwjE_8OBm_LmAGEgjl8S6uiyW4kknlW7N5X84Pt95D7WK-IF8Yelqn-UA73-qK0eFXI/exec";
 
-async function dashboardYukle(){
+function anasayfa(){
+document.getElementById("icerik").innerHTML = `
+<div class="card">
+<h3>Dashboard</h3>
+<div id="toplam"></div>
+<div id="kesim"></div>
+</div>
+`;
+dashboard();
+}
 
-const response = await fetch(API_URL,{
+async function dashboard(){
+
+const res = await fetch(API_URL,{
 method:"POST",
 body: JSON.stringify({tip:"dashboard"})
 });
 
-const data = await response.json();
+const data = await res.json();
 
-document.getElementById("toplam").innerText = data.toplam;
-document.getElementById("koyun").innerText = data.koyun;
-document.getElementById("koc").innerText = data.koc;
-document.getElementById("kuzu").innerText = data.kuzu;
+document.getElementById("toplam").innerHTML =
+"Toplam Hayvan: <b>"+data.toplam+"</b>";
 
-let kesimHTML="";
+let kesimHTML="<h4>Kesime Gidecekler</h4>";
 data.kesim.forEach(h=>{
-kesimHTML += `<div class="red">${h.qr} - ${h.sonKilo} kg</div>`;
+kesimHTML += "<div class='kesim'>"+h.qr+" - "+h.sonKilo+" kg</div>";
 });
-document.getElementById("kesimListe").innerHTML = kesimHTML;
-
-let asiHTML="";
-data.asi.forEach(a=>{
-asiHTML += `<div class="yellow">${a.qr} - ${a.tarih}</div>`;
-});
-document.getElementById("asiListe").innerHTML = asiHTML;
-
+document.getElementById("kesim").innerHTML = kesimHTML;
 }
 
-dashboardYukle();
-function sayfaGoster(sayfa){
-
-if(sayfa=="anasayfa"){
-  dashboardYukle();
+function ekle(){
+document.getElementById("icerik").innerHTML = `
+<div class="card">
+<h3>Yeni Hayvan</h3>
+QR:<input id="qr">
+Küpe:<input id="kupe">
+Tür:
+<select id="tur">
+<option>Koyun</option>
+<option>Kuzu</option>
+<option>Koç</option>
+<option>Düve</option>
+<option>Dana</option>
+<option>İnek</option>
+<option>Boğa</option>
+</select>
+<button onclick="kaydet()">Kaydet</button>
+</div>
+`;
 }
 
-if(sayfa=="tara"){
-  document.getElementById("icerik").innerHTML = `
-  <div class="section">
-  <h3>QR Tara</h3>
-  <div id="reader"></div>
-  </div>`;
-}
-
-if(sayfa=="ekle"){
-  document.getElementById("icerik").innerHTML = `
-  <div class="section">
-  <h3>Yeni Hayvan</h3>
-  QR:
-  <input id="yeniQR">
-  Küpe:
-  <input id="yeniKupe">
-  Tür:
-  <select id="yeniTur">
-    <option>Koyun</option>
-    <option>Kuzu</option>
-    <option>Koç</option>
-    <option>Düve</option>
-    <option>Dana</option>
-    <option>İnek</option>
-    <option>Boğa</option>
-  </select>
-  <button onclick="hayvanEkleManuel()">Kaydet</button>
-  </div>`;
-}
-
-if(sayfa=="liste"){
-  hayvanListesi();
-}
-
-}
-
-async function hayvanEkleManuel(){
+async function kaydet(){
 
 await fetch(API_URL,{
 method:"POST",
 body: JSON.stringify({
-  tip:"hayvanEkle",
-  qr: document.getElementById("yeniQR").value,
-  kupe: document.getElementById("yeniKupe").value,
-  tur: document.getElementById("yeniTur").value
+tip:"hayvanEkle",
+qr:document.getElementById("qr").value,
+kupe:document.getElementById("kupe").value,
+tur:document.getElementById("tur").value
 })
 });
 
 alert("Kaydedildi");
-dashboardYukle();
+anasayfa();
 }
 
-async function hayvanListesi(){
+async function liste(){
 
-const response = await fetch(API_URL,{
+const res = await fetch(API_URL,{
 method:"POST",
 body: JSON.stringify({tip:"dashboard"})
 });
 
-const data = await response.json();
+const data = await res.json();
 
-let html = `<div class="section"><h3>Tüm Hayvanlar</h3>`;
+let html="<div class='card'><h3>Tüm Hayvanlar</h3>";
 
 data.kesim.forEach(h=>{
-html += `<div style="color:red">${h.qr} - ${h.sonKilo} kg</div>`;
+html += "<div class='kesim'>"+h.qr+"</div>";
 });
 
-html += `</div>`;
+html+="</div>";
 
 document.getElementById("icerik").innerHTML = html;
-
 }
+
+anasayfa();
+
 </script>
 
 </body>
