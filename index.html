@@ -18,10 +18,8 @@ input{width:100%;padding:10px;margin-top:6px;border-radius:6px;border:1px solid 
 .kesim{color:red;font-weight:bold}
 .besi{color:green;font-weight:bold}
 .hidden{display:none}
-#reader{width:100%;margin-top:10px}
+.kiloBox{font-size:13px;margin-top:4px;color:#555}
 .menu button{margin-bottom:6px}
-.artis{color:green;font-weight:bold}
-.dusus{color:red;font-weight:bold}
 </style>
 </head>
 
@@ -38,7 +36,9 @@ input{width:100%;padding:10px;margin-top:6px;border-radius:6px;border:1px solid 
 </div>
 
 <div id="dashboardPanel" class="card">
-<b>Toplam Hayvan:</b> <span id="toplam">0</span>
+<h3>Genel Durum</h3>
+<div><b>Toplam Hayvan:</b> <span id="toplam">0</span></div>
+<div id="turSayilari" style="margin-top:10px;"></div>
 </div>
 
 <div id="listePanel" class="card hidden">
@@ -49,12 +49,8 @@ input{width:100%;padding:10px;margin-top:6px;border-radius:6px;border:1px solid 
 
 <div id="aramaPanel" class="card hidden">
 <h3>Hayvan Ara</h3>
-<input id="arama" placeholder="QR / Küpe No">
+<input id="arama" placeholder="QR">
 <button onclick="hayvanGetir()">Ara</button>
-<button onclick="qrBaslat()">QR Okut</button>
-
-<div id="reader" class="hidden"></div>
-<button id="qrKapatBtn" class="hidden" onclick="qrKapat()">QR Kapat</button>
 </div>
 
 <div id="kartPanel" class="card hidden"></div>
@@ -64,10 +60,8 @@ input{width:100%;padding:10px;margin-top:6px;border-radius:6px;border:1px solid 
 <script>
 
 const API_URL="https://script.google.com/macros/s/AKfycbwUhg_knEiRUulKxjzbdVRQXX6qFa9ypzhkUDCV8miaoOnggHvr4ADLMeTvSR6H0XA_/exec";
-let seciliQR=null;
+
 let tumListe=[];
-let qrScanner=null;
-let mevcutKilo=0;
 
 /* PANEL */
 function panelGoster(panel){
@@ -89,7 +83,16 @@ document.getElementById("aramaPanel").classList.remove("hidden");
 async function dashboardYukle(){
 const res=await fetch(API_URL,{method:"POST",body:JSON.stringify({tip:"dashboard"})});
 const data=await res.json();
+
 document.getElementById("toplam").innerText=data.toplam;
+
+let turHtml="";
+for(let tur in data.turler){
+if(data.turler[tur] > 0){
+turHtml+=`<div><b>${tur}:</b> ${data.turler[tur]}</div>`;
+}
+}
+document.getElementById("turSayilari").innerHTML=turHtml;
 }
 
 /* LİSTE */
@@ -103,8 +106,12 @@ function listeRender(data){
 let html="";
 data.forEach(h=>{
 html+=`
-<div class="list-item" onclick="kartAc('${h.qr}')">
-${h.qr} - ${h.tur}
+<div class="list-item">
+<b>${h.qr}</b> - ${h.tur}
+<div class="kiloBox">
+Önceki: ${h.oncekiKilo || "-"} kg |
+Mevcut: ${h.sonKilo || "-"} kg
+</div>
 <div class="${h.durum=='KESIM'?'kesim':'besi'}">${h.durum}</div>
 </div>
 `;
@@ -120,85 +127,21 @@ listeRender(filtre);
 
 /* HAYVAN GETİR */
 async function hayvanGetir(){
-kartAc(document.getElementById("arama").value);
-}
-
-async function kartAc(qr){
+const qr=document.getElementById("arama").value;
 const res=await fetch(API_URL,{method:"POST",body:JSON.stringify({tip:"hayvanGetir",qr:qr})});
 const data=await res.json();
-if(!data){alert("Bulunamadı");return;}
 
-seciliQR=data.qr;
-mevcutKilo=Number(data.sonKilo)||0;
+if(!data){alert("Bulunamadı");return;}
 
 document.getElementById("kartPanel").classList.remove("hidden");
 document.getElementById("kartPanel").innerHTML=`
 <h3>Hayvan Kartı</h3>
 <b>QR:</b> ${data.qr}<br>
 <b>Tür:</b> ${data.tur}<br>
-<b>Son Kilo:</b> ${mevcutKilo} kg<br>
-<b>Durum:</b> <span class="${data.durum=='KESIM'?'kesim':'besi'}">${data.durum}</span>
-<hr>
-<h4>Kilo Güncelle</h4>
-<input id="yeniKilo" type="number" placeholder="Yeni kilo">
-<button onclick="kiloEkle()">Kaydet</button>
-<div id="kiloSonuc"></div>
+<b>Önceki Kilo:</b> ${data.oncekiKilo || "-"} kg<br>
+<b>Mevcut Kilo:</b> ${data.sonKilo || "-"} kg<br>
+<b>Durum:</b> ${data.durum}
 `;
-}
-
-/* KİLO EKLE */
-async function kiloEkle(){
-
-let yeni=Number(document.getElementById("yeniKilo").value);
-let fark=yeni-mevcutKilo;
-
-await fetch(API_URL,{
-method:"POST",
-body:JSON.stringify({
-tip:"kiloGuncelle",
-qr:seciliQR,
-kilo:yeni
-})
-});
-
-let sonuc="";
-if(fark>0)
-sonuc=`<div class="artis">+${fark} kg ↑</div>`;
-else if(fark<0)
-sonuc=`<div class="dusus">${fark} kg ↓</div>`;
-else
-sonuc=`Değişim yok`;
-
-document.getElementById("kiloSonuc").innerHTML=sonuc;
-mevcutKilo=yeni;
-
-dashboardYukle();
-listeYukle();
-}
-
-/* QR */
-function qrBaslat(){
-document.getElementById("reader").classList.remove("hidden");
-document.getElementById("qrKapatBtn").classList.remove("hidden");
-
-qrScanner=new Html5Qrcode("reader");
-qrScanner.start({facingMode:"environment"},{fps:10,qrbox:250},
-qrCodeMessage=>{
-document.getElementById("arama").value=qrCodeMessage;
-qrKapat();
-kartAc(qrCodeMessage);
-});
-}
-
-function qrKapat(){
-if(qrScanner){
-qrScanner.stop().then(()=>{
-qrScanner.clear();
-qrScanner=null;
-});
-}
-document.getElementById("reader").classList.add("hidden");
-document.getElementById("qrKapatBtn").classList.add("hidden");
 }
 
 dashboardYukle();
