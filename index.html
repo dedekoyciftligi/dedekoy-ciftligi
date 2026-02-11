@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dedeköy Çiftliği</title>
 
-<link rel="manifest" href="manifest.json">
 <script src="https://unpkg.com/html5-qrcode"></script>
 
 <style>
@@ -17,6 +16,7 @@ input,select{width:100%;padding:8px;margin-top:5px}
 #reader{width:100%}
 .kesim{color:red;font-weight:bold}
 .besi{color:green;font-weight:bold}
+h3{margin-top:0}
 </style>
 </head>
 
@@ -30,7 +30,7 @@ input,select{width:100%;padding:8px;margin-top:5px}
 </div>
 
 <div class="card">
-<h3>Manuel Küpe / QR Ara</h3>
+<h3>Manuel QR / Küpe Ara</h3>
 <input type="text" id="arama" placeholder="QR veya Küpe No">
 <button onclick="hayvanGetir()">Hayvanı Getir</button>
 </div>
@@ -41,7 +41,24 @@ input,select{width:100%;padding:8px;margin-top:5px}
 
 const API_URL = "https://script.google.com/macros/s/AKfycbwjE_8OBm_LmAGEgjl8S6uiyW4kknlW7N5X84Pt95D7WK-IF8Yelqn-UA73-qK0eFXI/exec";
 
+/* QR BAŞLAT */
+function qrBaslat(){
+  const html5QrCode = new Html5Qrcode("reader");
+  html5QrCode.start(
+    { facingMode: "environment" },
+    { fps: 10, qrbox: 250 },
+    qrMessage => {
+      document.getElementById("arama").value = qrMessage;
+      html5QrCode.stop();
+      hayvanGetir();
+    }
+  );
+}
+qrBaslat();
+
+/* HAYVAN GETİR */
 async function hayvanGetir(){
+
   const arama = document.getElementById("arama").value;
 
   const response = await fetch(API_URL,{
@@ -55,7 +72,23 @@ async function hayvanGetir(){
   const data = await response.json();
 
   if(!data){
-    alert("Hayvan bulunamadı");
+    document.getElementById("hayvanKart").innerHTML = `
+    <div class="card">
+    <h3>Yeni Hayvan</h3>
+    Küpe No:
+    <input id="yeniKupe">
+    Tür:
+    <select id="yeniTur">
+      <option>Koyun</option>
+      <option>Kuzu</option>
+      <option>Koç</option>
+      <option>Düve</option>
+      <option>Dana</option>
+      <option>İnek</option>
+      <option>Boğa</option>
+    </select>
+    <button onclick="hayvanEkle('${arama}')">Hayvanı Kaydet</button>
+    </div>`;
     return;
   }
 
@@ -65,10 +98,74 @@ async function hayvanGetir(){
   QR: ${data.qr}<br>
   Küpe: ${data.kupe}<br>
   Tür: ${data.tur}<br>
-  Son Kilo: ${data.sonKilo}<br>
+  Son Kilo: ${data.sonKilo || "-"}<br>
   Durum: <span class="${data.durum == 'KESIM' ? 'kesim':'besi'}">${data.durum}</span>
+
+  <hr>
+
+  <h4>Kilo Güncelle</h4>
+  <input type="number" id="yeniKilo" placeholder="Yeni Kilo">
+  <button onclick="kiloGuncelle('${data.qr}')">Kilo Kaydet</button>
+
+  <h4>Aşı Ekle</h4>
+  <input id="asiAdi" placeholder="Aşı Adı">
+  <input type="date" id="sonrakiAsi">
+  <button onclick="asiEkle('${data.qr}')">Aşı Kaydet</button>
+
   </div>
   `;
+}
+
+/* HAYVAN EKLE */
+async function hayvanEkle(qr){
+
+  await fetch(API_URL,{
+    method:"POST",
+    body: JSON.stringify({
+      tip:"hayvanEkle",
+      qr: qr,
+      kupe: document.getElementById("yeniKupe").value,
+      tur: document.getElementById("yeniTur").value
+    })
+  });
+
+  alert("Hayvan eklendi");
+  hayvanGetir();
+}
+
+/* KİLO GÜNCELLE */
+async function kiloGuncelle(qr){
+
+  const kilo = document.getElementById("yeniKilo").value;
+
+  await fetch(API_URL,{
+    method:"POST",
+    body: JSON.stringify({
+      tip:"kiloGuncelle",
+      qr: qr,
+      kilo: kilo
+    })
+  });
+
+  alert("Kilo güncellendi");
+  hayvanGetir();
+}
+
+/* AŞI EKLE */
+async function asiEkle(qr){
+
+  await fetch(API_URL,{
+    method:"POST",
+    body: JSON.stringify({
+      tip:"asiEkle",
+      qr: qr,
+      asi: document.getElementById("asiAdi").value,
+      sonraki: document.getElementById("sonrakiAsi").value
+    })
+  });
+
+  alert("Aşı kaydedildi");
+  hayvanGetir();
 }
 
 </script>
