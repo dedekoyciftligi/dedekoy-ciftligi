@@ -68,7 +68,7 @@ font-size:14px;
 <small>Dedeköy Çiftliği</small>
 </header>
 
-<div class="container">
+<div class="container" id="icerik">
 
 <div class="box purple">
 Toplam Hayvan<br>
@@ -100,10 +100,10 @@ Toplam Hayvan<br>
 </div>
 
 <div class="bottom-menu">
-<div>🏠<br>Ana Sayfa</div>
-<div>📷<br>Tara</div>
-<div>➕<br>Ekle</div>
-<div>📋<br>Liste</div>
+<div onclick="sayfaGoster('anasayfa')">🏠<br>Ana Sayfa</div>
+<div onclick="sayfaGoster('tara')">📷<br>Tara</div>
+<div onclick="sayfaGoster('ekle')">➕<br>Ekle</div>
+<div onclick="sayfaGoster('liste')">📋<br>Liste</div>
 </div>
 
 <script>
@@ -139,7 +139,84 @@ document.getElementById("asiListe").innerHTML = asiHTML;
 }
 
 dashboardYukle();
+function sayfaGoster(sayfa){
 
+if(sayfa=="anasayfa"){
+  dashboardYukle();
+}
+
+if(sayfa=="tara"){
+  document.getElementById("icerik").innerHTML = `
+  <div class="section">
+  <h3>QR Tara</h3>
+  <div id="reader"></div>
+  </div>`;
+}
+
+if(sayfa=="ekle"){
+  document.getElementById("icerik").innerHTML = `
+  <div class="section">
+  <h3>Yeni Hayvan</h3>
+  QR:
+  <input id="yeniQR">
+  Küpe:
+  <input id="yeniKupe">
+  Tür:
+  <select id="yeniTur">
+    <option>Koyun</option>
+    <option>Kuzu</option>
+    <option>Koç</option>
+    <option>Düve</option>
+    <option>Dana</option>
+    <option>İnek</option>
+    <option>Boğa</option>
+  </select>
+  <button onclick="hayvanEkleManuel()">Kaydet</button>
+  </div>`;
+}
+
+if(sayfa=="liste"){
+  hayvanListesi();
+}
+
+}
+
+async function hayvanEkleManuel(){
+
+await fetch(API_URL,{
+method:"POST",
+body: JSON.stringify({
+  tip:"hayvanEkle",
+  qr: document.getElementById("yeniQR").value,
+  kupe: document.getElementById("yeniKupe").value,
+  tur: document.getElementById("yeniTur").value
+})
+});
+
+alert("Kaydedildi");
+dashboardYukle();
+}
+
+async function hayvanListesi(){
+
+const response = await fetch(API_URL,{
+method:"POST",
+body: JSON.stringify({tip:"dashboard"})
+});
+
+const data = await response.json();
+
+let html = `<div class="section"><h3>Tüm Hayvanlar</h3>`;
+
+data.kesim.forEach(h=>{
+html += `<div style="color:red">${h.qr} - ${h.sonKilo} kg</div>`;
+});
+
+html += `</div>`;
+
+document.getElementById("icerik").innerHTML = html;
+
+}
 </script>
 
 </body>
