@@ -7,39 +7,72 @@
 <script src="https://unpkg.com/html5-qrcode"></script>
 
 <style>
-body{margin:0;font-family:Arial;background:#f4f6f5}
-header{background:#1b5e20;color:white;padding:18px;text-align:center;font-size:20px;font-weight:bold}
-.container{padding:15px}
-.card{background:white;margin-bottom:15px;padding:15px;border-radius:14px;box-shadow:0 4px 10px rgba(0,0,0,0.08)}
-button{padding:12px;width:100%;margin-top:8px;background:#2e7d32;color:white;border:none;border-radius:8px}
-input{width:100%;padding:10px;margin-top:6px;border-radius:6px;border:1px solid #ccc}
-.list-item{padding:10px;border-bottom:1px solid #eee;cursor:pointer}
-.list-item:hover{background:#f0f0f0}
+body{
+margin:0;
+font-family:'Segoe UI',sans-serif;
+background:linear-gradient(135deg,#e8f5e9,#f1f8e9);
+}
+header{
+background:linear-gradient(90deg,#1b5e20,#2e7d32);
+color:white;
+padding:22px;
+text-align:center;
+font-size:22px;
+letter-spacing:1px;
+box-shadow:0 4px 12px rgba(0,0,0,0.2);
+}
+.container{padding:18px}
+.card{
+background:white;
+margin-bottom:20px;
+padding:18px;
+border-radius:18px;
+box-shadow:0 8px 20px rgba(0,0,0,0.08);
+}
+button{
+padding:12px;
+width:100%;
+margin-top:8px;
+background:#2e7d32;
+color:white;
+border:none;
+border-radius:10px;
+font-weight:600;
+cursor:pointer;
+}
+button:hover{background:#1b5e20}
+input{
+width:100%;
+padding:10px;
+margin-top:6px;
+border-radius:8px;
+border:1px solid #ccc;
+}
+.list-item{
+padding:12px;
+border-bottom:1px solid #eee;
+}
 .kesim{color:red;font-weight:bold}
 .besi{color:green;font-weight:bold}
 .hidden{display:none}
-.kiloBox{font-size:13px;margin-top:4px;color:#555}
-.menu button{margin-bottom:6px}
+#reader{margin-top:10px}
 </style>
 </head>
 
 <body>
 
-<header>DEDEKÖY ÇİFTLİĞİ</header>
+<header>DEDEKÖY ÇİFTLİĞİ YÖNETİM PANELİ</header>
 
 <div class="container">
 
-<div class="card menu">
+<div class="card">
 <button onclick="panelGoster('dashboard')">Ana Sayfa</button>
 <button onclick="panelGoster('liste')">Hayvan Listesi</button>
-<button onclick="panelGoster('arama')">Hayvan Ara</button>
+<button onclick="panelGoster('arama')">QR ile Ara</button>
+<button onclick="panelGoster('kesim')">Kesime Gidecekler</button>
 </div>
 
-<div id="dashboardPanel" class="card">
-<h3>Genel Durum</h3>
-<div><b>Toplam Hayvan:</b> <span id="toplam">0</span></div>
-<div id="turSayilari" style="margin-top:10px;"></div>
-</div>
+<div id="dashboardPanel" class="card"></div>
 
 <div id="listePanel" class="card hidden">
 <h3>Hayvan Listesi</h3>
@@ -48,9 +81,17 @@ input{width:100%;padding:10px;margin-top:6px;border-radius:6px;border:1px solid 
 </div>
 
 <div id="aramaPanel" class="card hidden">
-<h3>Hayvan Ara</h3>
-<input id="arama" placeholder="QR">
+<h3>QR Okut</h3>
+<div id="reader"></div>
+<button onclick="kameraBaslat()">QR Başlat</button>
+<button onclick="kameraKapat()">QR Kapat</button>
+<input id="arama" placeholder="QR Manuel">
 <button onclick="hayvanGetir()">Ara</button>
+</div>
+
+<div id="kesimPanel" class="card hidden">
+<h3>⚠ Kesime Gidecekler</h3>
+<div id="kesimListe"></div>
 </div>
 
 <div id="kartPanel" class="card hidden"></div>
@@ -60,23 +101,19 @@ input{width:100%;padding:10px;margin-top:6px;border-radius:6px;border:1px solid 
 <script>
 
 const API_URL="https://script.google.com/macros/s/AKfycbwUhg_knEiRUulKxjzbdVRQXX6qFa9ypzhkUDCV8miaoOnggHvr4ADLMeTvSR6H0XA_/exec";
-
 let tumListe=[];
+let html5QrCode;
 
 /* PANEL */
-function panelGoster(panel){
-document.getElementById("dashboardPanel").classList.add("hidden");
-document.getElementById("listePanel").classList.add("hidden");
-document.getElementById("aramaPanel").classList.add("hidden");
+function panelGoster(p){
+["dashboardPanel","listePanel","aramaPanel","kesimPanel"]
+.forEach(id=>document.getElementById(id).classList.add("hidden"));
 
-if(panel=="dashboard")
-document.getElementById("dashboardPanel").classList.remove("hidden");
+if(p=="dashboard") dashboardYukle();
+if(p=="liste") listeYukle();
+if(p=="kesim") kesimListeYukle();
 
-if(panel=="liste")
-document.getElementById("listePanel").classList.remove("hidden");
-
-if(panel=="arama")
-document.getElementById("aramaPanel").classList.remove("hidden");
+document.getElementById(p+"Panel").classList.remove("hidden");
 }
 
 /* DASHBOARD */
@@ -84,15 +121,16 @@ async function dashboardYukle(){
 const res=await fetch(API_URL,{method:"POST",body:JSON.stringify({tip:"dashboard"})});
 const data=await res.json();
 
-document.getElementById("toplam").innerText=data.toplam;
-
 let turHtml="";
 for(let tur in data.turler){
-if(data.turler[tur] > 0){
 turHtml+=`<div><b>${tur}:</b> ${data.turler[tur]}</div>`;
 }
-}
-document.getElementById("turSayilari").innerHTML=turHtml;
+
+document.getElementById("dashboardPanel").innerHTML=`
+<h3>Genel Durum</h3>
+<div><b>Toplam Hayvan:</b> ${data.toplam}</div>
+${turHtml}
+`;
 }
 
 /* LİSTE */
@@ -107,22 +145,30 @@ let html="";
 data.forEach(h=>{
 html+=`
 <div class="list-item">
-<b>${h.qr}</b> - ${h.tur}
-<div class="kiloBox">
-Önceki: ${h.oncekiKilo || "-"} kg |
-Mevcut: ${h.sonKilo || "-"} kg
-</div>
+<b>${h.qr}</b> - ${h.tur}<br>
+İlk: ${h.oncekiKilo || "-"} kg |
+Son: ${h.sonKilo || "-"} kg<br>
 <div class="${h.durum=='KESIM'?'kesim':'besi'}">${h.durum}</div>
-</div>
-`;
+</div>`;
 });
 document.getElementById("liste").innerHTML=html;
 }
 
 function listeFiltre(){
 let q=document.getElementById("listeArama").value.toLowerCase();
-let filtre=tumListe.filter(h=>h.qr.toLowerCase().includes(q));
-listeRender(filtre);
+listeRender(tumListe.filter(h=>h.qr.toLowerCase().includes(q)));
+}
+
+/* KESİM LİSTE */
+async function kesimListeYukle(){
+const res=await fetch(API_URL,{method:"POST",body:JSON.stringify({tip:"tumHayvanlar"})});
+const data=await res.json();
+
+let html="";
+data.filter(h=>h.durum=="KESIM").forEach(h=>{
+html+=`<div class="list-item kesim"><b>${h.qr}</b> - ${h.tur}</div>`;
+});
+document.getElementById("kesimListe").innerHTML=html;
 }
 
 /* HAYVAN GETİR */
@@ -130,22 +176,33 @@ async function hayvanGetir(){
 const qr=document.getElementById("arama").value;
 const res=await fetch(API_URL,{method:"POST",body:JSON.stringify({tip:"hayvanGetir",qr:qr})});
 const data=await res.json();
-
 if(!data){alert("Bulunamadı");return;}
 
 document.getElementById("kartPanel").classList.remove("hidden");
 document.getElementById("kartPanel").innerHTML=`
 <h3>Hayvan Kartı</h3>
-<b>QR:</b> ${data.qr}<br>
-<b>Tür:</b> ${data.tur}<br>
-<b>Önceki Kilo:</b> ${data.oncekiKilo || "-"} kg<br>
-<b>Mevcut Kilo:</b> ${data.sonKilo || "-"} kg<br>
-<b>Durum:</b> ${data.durum}
+QR: ${data.qr}<br>
+Tür: ${data.tur}<br>
+İlk Kilo: ${data.oncekiKilo || "-"} kg<br>
+Son Kilo: ${data.sonKilo || "-"} kg<br>
+Durum: ${data.durum}
 `;
 }
 
-dashboardYukle();
-listeYukle();
+/* QR */
+function kameraBaslat(){
+html5QrCode=new Html5Qrcode("reader");
+html5QrCode.start({facingMode:"environment"},{fps:10,qrbox:250},
+qr=>{
+document.getElementById("arama").value=qr;
+html5QrCode.stop();
+hayvanGetir();
+});
+}
+function kameraKapat(){
+if(html5QrCode) html5QrCode.stop();
+}
+
 panelGoster("dashboard");
 
 </script>
