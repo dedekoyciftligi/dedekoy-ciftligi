@@ -5,55 +5,72 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dedeköy Çiftliği</title>
 
+<link rel="manifest" href="manifest.json">
+<script src="https://unpkg.com/html5-qrcode"></script>
+
 <style>
-body{margin:0;font-family:Arial;background:#f2f2f2}
-header{
-background:#4a148c;
-color:white;
-padding:20px;
-text-align:center;
-font-size:20px;
+body{
+  margin:0;
+  font-family: 'Segoe UI', sans-serif;
+  background:#f4f6f9;
 }
 
-#icerik{padding:15px;margin-bottom:70px}
+header{
+  background:linear-gradient(135deg,#1b5e20,#2e7d32);
+  color:white;
+  padding:20px;
+  font-size:20px;
+  text-align:center;
+  font-weight:bold;
+}
+
+.container{
+  padding:15px;
+  padding-bottom:90px;
+}
 
 .card{
-background:white;
-padding:15px;
-border-radius:15px;
-margin-bottom:10px;
+  background:white;
+  border-radius:15px;
+  padding:15px;
+  margin-bottom:15px;
+  box-shadow:0 5px 15px rgba(0,0,0,0.08);
 }
 
 button{
-width:100%;
-padding:12px;
-margin-top:10px;
-background:#2e7d32;
-color:white;
-border:none;
-border-radius:8px;
+  background:#2e7d32;
+  color:white;
+  border:none;
+  padding:12px;
+  width:100%;
+  border-radius:10px;
+  margin-top:10px;
+  font-size:15px;
 }
 
 input,select{
-width:100%;
-padding:10px;
-margin-top:5px;
+  width:100%;
+  padding:10px;
+  margin-top:8px;
+  border-radius:8px;
+  border:1px solid #ddd;
 }
 
-.bottom-menu{
-position:fixed;
-bottom:0;
-width:100%;
-background:white;
-display:flex;
-justify-content:space-around;
-padding:10px 0;
-border-top:1px solid #ddd;
+.bottom-nav{
+  position:fixed;
+  bottom:0;
+  width:100%;
+  background:white;
+  display:flex;
+  justify-content:space-around;
+  padding:10px 0;
+  box-shadow:0 -2px 10px rgba(0,0,0,0.1);
 }
 
-.bottom-menu div{
-text-align:center;
-font-size:14px;
+.nav-btn{
+  text-align:center;
+  font-size:13px;
+  color:#2e7d32;
 }
 
 .kesim{color:red;font-weight:bold}
@@ -63,114 +80,102 @@ font-size:14px;
 
 <body>
 
-<header>🐑 Dedeköy Çiftliği</header>
+<header>DEDEKÖY ÇİFTLİĞİ</header>
 
-<div id="icerik"></div>
+<div class="container" id="content">
 
-<div class="bottom-menu">
-<div onclick="anasayfa()">🏠<br>Ana</div>
-<div onclick="ekle()">➕<br>Ekle</div>
-<div onclick="liste()">📋<br>Liste</div>
+<div class="card">
+<h3>Genel Durum</h3>
+<div id="toplam"></div>
+</div>
+
+</div>
+
+<div class="bottom-nav">
+<div class="nav-btn" onclick="dashboard()">Ana</div>
+<div class="nav-btn" onclick="listele()">Liste</div>
+<div class="nav-btn" onclick="qrAc()">QR</div>
 </div>
 
 <script>
 
 const API_URL = "https://script.google.com/macros/s/AKfycbwjE_8OBm_LmAGEgjl8S6uiyW4kknlW7N5X84Pt95D7WK-IF8Yelqn-UA73-qK0eFXI/exec";
 
-function anasayfa(){
-document.getElementById("icerik").innerHTML = `
-<div class="card">
-<h3>Dashboard</h3>
-<div id="toplam"></div>
-<div id="kesim"></div>
-</div>
-`;
-dashboard();
-}
-
 async function dashboard(){
-
-const res = await fetch(API_URL,{
-method:"POST",
-body: JSON.stringify({tip:"dashboard"})
-});
-
-const data = await res.json();
-
-document.getElementById("toplam").innerHTML =
-"Toplam Hayvan: <b>"+data.toplam+"</b>";
-
-let kesimHTML="<h4>Kesime Gidecekler</h4>";
-data.kesim.forEach(h=>{
-kesimHTML += "<div class='kesim'>"+h.qr+" - "+h.sonKilo+" kg</div>";
-});
-document.getElementById("kesim").innerHTML = kesimHTML;
+  document.getElementById("content").innerHTML=`
+  <div class="card">
+  <h3>Genel Durum</h3>
+  <div id="toplam"></div>
+  </div>`;
+  listeVerisi();
 }
 
-function ekle(){
-document.getElementById("icerik").innerHTML = `
-<div class="card">
-<h3>Yeni Hayvan</h3>
-QR:<input id="qr">
-Küpe:<input id="kupe">
-Tür:
-<select id="tur">
-<option>Koyun</option>
-<option>Kuzu</option>
-<option>Koç</option>
-<option>Düve</option>
-<option>Dana</option>
-<option>İnek</option>
-<option>Boğa</option>
-</select>
-<button onclick="kaydet()">Kaydet</button>
-</div>
-`;
+async function listeVerisi(){
+  const response = await fetch(API_URL,{
+    method:"POST",
+    body: JSON.stringify({tip:"tumHayvanlar"})
+  });
+  const data = await response.json();
+  document.getElementById("toplam").innerHTML=
+  "Toplam Hayvan: "+data.length;
 }
 
-async function kaydet(){
+async function listele(){
+  const response = await fetch(API_URL,{
+    method:"POST",
+    body: JSON.stringify({tip:"tumHayvanlar"})
+  });
+  const data = await response.json();
 
-await fetch(API_URL,{
-method:"POST",
-body: JSON.stringify({
-tip:"hayvanEkle",
-qr:document.getElementById("qr").value,
-kupe:document.getElementById("kupe").value,
-tur:document.getElementById("tur").value
-})
-});
+  let html="";
+  data.forEach(h=>{
+    html+=`
+    <div class="card">
+      <b>${h.kupe}</b><br>
+      Tür: ${h.tur}<br>
+      Kilo: ${h.sonKilo || "-"}<br>
+      Durum: <span class="${h.durum=='KESIM'?'kesim':'besi'}">${h.durum}</span>
+    </div>`;
+  });
 
-alert("Kaydedildi");
-anasayfa();
+  document.getElementById("content").innerHTML=html;
 }
 
-async function liste(){
+function qrAc(){
+  document.getElementById("content").innerHTML=`
+  <div class="card">
+    <div id="reader"></div>
+  </div>`;
 
-const res = await fetch(API_URL,{
-method:"POST",
-body: JSON.stringify({tip:"dashboard"})
-});
-
-const data = await res.json();
-
-let html="<div class='card'><h3>Tüm Hayvanlar</h3>";
-
-data.kesim.forEach(h=>{
-html += "<div class='kesim'>"+h.qr+"</div>";
-});
-
-html+="</div>";
-
-document.getElementById("icerik").innerHTML = html;
+  const qr = new Html5Qrcode("reader");
+  qr.start({facingMode:"environment"},
+  {fps:10,qrbox:250},
+  qrCodeMessage=>{
+    hayvanGetir(qrCodeMessage);
+    qr.stop();
+  });
 }
 
-anasayfa();
+async function hayvanGetir(qr){
+  const response = await fetch(API_URL,{
+    method:"POST",
+    body: JSON.stringify({tip:"hayvanGetir",qr:qr})
+  });
+  const data = await response.json();
+
+  document.getElementById("content").innerHTML=`
+  <div class="card">
+    <h3>Hayvan Kartı</h3>
+    Küpe: ${data.kupe}<br>
+    Tür: ${data.tur}<br>
+    Son Kilo: ${data.sonKilo || "-"}<br>
+    Durum: <span class="${data.durum=='KESIM'?'kesim':'besi'}">${data.durum}</span>
+  </div>`;
+}
+
+dashboard();
 
 </script>
-<script>
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("service-worker.js");
-}
-</script>
+
 </body>
 </html>
