@@ -99,6 +99,43 @@ input,select{
 </div>
 
 <script>
+  function hayvanEkleEkran(){
+  document.getElementById("content").innerHTML=`
+  <div class="card">
+    <h3>Yeni Hayvan Ekle</h3>
+    <input id="qr" placeholder="QR Kodu (DK-0001)">
+    <input id="kupe" placeholder="Küpe No">
+    <select id="tur">
+      <option value="Koyun">Koyun</option>
+      <option value="Kuzu">Kuzu</option>
+      <option value="Koç">Koç</option>
+      <option value="Düve">Düve</option>
+      <option value="Dana">Dana</option>
+      <option value="İnek">İnek</option>
+      <option value="Boğa">Boğa</option>
+    </select>
+    <button onclick="hayvanEkle()">Kaydet</button>
+  </div>`;
+}
+
+async function hayvanEkle(){
+  const qr = document.getElementById("qr").value;
+  const kupe = document.getElementById("kupe").value;
+  const tur = document.getElementById("tur").value;
+
+  await fetch(API_URL,{
+    method:"POST",
+    body: JSON.stringify({
+      tip:"hayvanEkle",
+      qr:qr,
+      kupe:kupe,
+      tur:tur
+    })
+  });
+
+  alert("Hayvan eklendi");
+  dashboard();
+}
 
 const API_URL = "https://script.google.com/macros/s/AKfycbwjE_8OBm_LmAGEgjl8S6uiyW4kknlW7N5X84Pt95D7WK-IF8Yelqn-UA73-qK0eFXI/exec";
 
