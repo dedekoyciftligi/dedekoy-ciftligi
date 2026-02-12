@@ -1,166 +1,31 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>Çiftlik Yönetimi</title>
-<style>
+<script src="https://unpkg.com/html5-qrcode"></script>
 
-body{
-font-family:Arial;
-background:#f4f6f9;
-margin:0;
-}
+<div style="padding:20px;font-family:Arial">
 
-header{
-background:linear-gradient(90deg,#6a11cb,#2575fc);
-color:white;
-padding:20px;
-text-align:center;
-font-size:22px;
-font-weight:bold;
-}
+<h2>Hayvan Yönetim</h2>
 
-.container{
-padding:20px;
-}
+<button onclick="kameraAc()">QR Kamera Aç</button>
+<button onclick="kameraKapat()">QR Kapat</button>
 
-.card{
-background:white;
-padding:15px;
-margin-bottom:15px;
-border-radius:12px;
-box-shadow:0 4px 10px rgba(0,0,0,0.08);
-}
+<div id="reader" style="width:300px;margin-top:10px"></div>
 
-button{
-padding:10px;
-border:none;
-border-radius:8px;
-background:#6a11cb;
-color:white;
-cursor:pointer;
-margin-top:10px;
-}
+<hr>
 
-input,select{
-width:100%;
-padding:8px;
-margin-top:5px;
-margin-bottom:10px;
-border-radius:6px;
-border:1px solid #ccc;
-}
-
-.grid{
-display:grid;
-grid-template-columns:1fr 1fr;
-gap:10px;
-}
-
-.stat{
-background:linear-gradient(90deg,#2575fc,#6a11cb);
-color:white;
-padding:15px;
-border-radius:12px;
-text-align:center;
-font-size:18px;
-}
-
-.animal{
-background:white;
-padding:10px;
-border-radius:10px;
-margin-bottom:10px;
-box-shadow:0 3px 8px rgba(0,0,0,0.06);
-}
-
-</style>
-</head>
-<body>
-
-<header>🐑 Çiftlik Yönetimi</header>
-
-<div class="container">
-
-<div class="grid">
-<div class="stat">Toplam<br><span id="toplam">0</span></div>
-<div class="stat">Koyun<br><span id="koyun">0</span></div>
-<div class="stat">Kuzu<br><span id="kuzu">0</span></div>
-<div class="stat">Koç<br><span id="koc">0</span></div>
-<div class="stat">Dana<br><span id="dana">0</span></div>
-<div class="stat">İnek<br><span id="inek">0</span></div>
-<div class="stat">Düve<br><span id="duve">0</span></div>
-<div class="stat">Boğa<br><span id="boga">0</span></div>
-</div>
-
-<div class="card">
-<h3>Hayvan Ekle</h3>
-
-QR ID
-<input id="qr">
-
-Küpe No
-<input id="kupe">
-
-Tür
-<select id="tur">
-<option value="">Seçiniz</option>
-<option>Kuzu</option>
-<option>Koyun</option>
-<option>Koç</option>
-<option>Dana</option>
-<option>İnek</option>
-<option>Düve</option>
-<option>Boğa</option>
-</select>
-
-İlk Kilo
-<input type="number" id="kilo">
-
-<button onclick="hayvanEkle()">Kaydet</button>
-</div>
-
-<div class="card">
 <h3>Hayvan Listesi</h3>
 <div id="liste"></div>
-</div>
+
+<hr>
+
+<div id="detay" style="display:none;border:1px solid #ccc;padding:15px;margin-top:10px"></div>
 
 </div>
 
 <script>
 
-const API = "https://script.google.com/macros/s/AKfycbyCrUTpLx_ICZPjSyuPz5cepk7Tt-kwi7eE5DU3GCA0XrjGCISGW-bIeZnfWiWyUjsn/exec";
+const API = "https://script.google.com/macros/s/AKfycbx5NQWC4SCFUKH7iEkG6LYmYZ7kGjN6oV8hUynzuU1PNAO8lUQ-o8zz0zO_6ZEUU6VR/exec";
+let scanner;
 
-async function hayvanEkle(){
-
-const qr = document.getElementById("qr").value.trim();
-const kupe = document.getElementById("kupe").value.trim();
-const tur = document.getElementById("tur").value;
-const kilo = document.getElementById("kilo").value;
-
-const r = await fetch(API,{
-method:"POST",
-body:JSON.stringify({
-tip:"hayvanEkle",
-qr:qr,
-kupe:kupe,
-tur:tur,
-kilo:kilo
-})
-});
-
-const cevap = await r.json();
-
-if(cevap.hata){
-alert(cevap.hata);
-return;
-}
-
-alert("Eklendi");
-location.reload();
-}
-
-async function listele(){
+async function listeYukle(){
 
 const r = await fetch(API,{
 method:"POST",
@@ -170,55 +35,119 @@ body:JSON.stringify({tip:"liste"})
 const data = await r.json();
 
 let html="";
-let sayac={};
 
-data.forEach(a=>{
-
-sayac[a.Tur]=(sayac[a.Tur]||0)+1;
+data.forEach(h=>{
 
 html+=`
-<div class="animal">
-<b>${a.KupeNo}</b> - ${a.Tur}<br>
-İlk: ${a.IlkKilo} kg | Son: ${a.SonKilo} kg<br>
-<button onclick="kiloGuncelle('${a.KupeNo}')">Kilo Güncelle</button>
+<div onclick="detayGoster('${h.KupeNo}')"
+style="padding:10px;border-bottom:1px solid #ddd;cursor:pointer">
+
+<b>${h.Tur}</b> - ${h.KupeNo}  
+<br>
+İlk: ${h.IlkKilo} kg | Son: ${h.SonKilo} kg  
+<br>
+Fark: ${h.KiloFark} kg  
+<br>
+Durum: ${h.Durum}
+
 </div>
 `;
-
 });
 
 document.getElementById("liste").innerHTML=html;
+}
 
-document.getElementById("toplam").innerText=data.length;
-document.getElementById("koyun").innerText=sayac["Koyun"]||0;
-document.getElementById("kuzu").innerText=sayac["Kuzu"]||0;
-document.getElementById("koc").innerText=sayac["Koç"]||0;
-document.getElementById("dana").innerText=sayac["Dana"]||0;
-document.getElementById("inek").innerText=sayac["İnek"]||0;
-document.getElementById("duve").innerText=sayac["Düve"]||0;
-document.getElementById("boga").innerText=sayac["Boğa"]||0;
+async function detayGoster(kupe){
 
+const r = await fetch(API,{
+method:"POST",
+body:JSON.stringify({tip:"liste"})
+});
+
+const data = await r.json();
+const h = data.find(x=>x.KupeNo==kupe);
+
+document.getElementById("detay").style.display="block";
+
+document.getElementById("detay").innerHTML=`
+
+<h3>${h.Tur} - ${h.KupeNo}</h3>
+
+Kilo Güncelle:
+<input id="yeniKilo" type="number">
+<button onclick="kiloGuncelle('${h.KupeNo}')">Kaydet</button>
+
+<br><br>
+
+Aşı Güncelle:
+<input id="sonAsi" type="date">
+<input id="sonrakiAsi" type="date">
+<button onclick="asiGuncelle('${h.KupeNo}')">Kaydet</button>
+
+<br><br>
+
+<button onclick="kesimeGonder('${h.KupeNo}')">KESİME GÖNDER</button>
+
+`;
 }
 
 async function kiloGuncelle(kupe){
 
-const yeni = prompt("Yeni kilo:");
-if(!yeni) return;
+const kilo=document.getElementById("yeniKilo").value;
 
 await fetch(API,{
 method:"POST",
-body:JSON.stringify({
-tip:"kiloGuncelle",
-kupe:kupe,
-kilo:yeni
-})
+body:JSON.stringify({tip:"kiloGuncelle",kupe:kupe,kilo:kilo})
 });
 
-location.reload();
+alert("Güncellendi");
+listeYukle();
 }
 
-listele();
+async function kesimeGonder(kupe){
+
+await fetch(API,{
+method:"POST",
+body:JSON.stringify({tip:"kesimeGonder",kupe:kupe})
+});
+
+alert("Kesime gönderildi");
+listeYukle();
+}
+
+async function asiGuncelle(kupe){
+
+const sonAsi=document.getElementById("sonAsi").value;
+const sonrakiAsi=document.getElementById("sonrakiAsi").value;
+
+await fetch(API,{
+method:"POST",
+body:JSON.stringify({tip:"asiGuncelle",kupe:kupe,sonAsi:sonAsi,sonrakiAsi:sonrakiAsi})
+});
+
+alert("Aşı güncellendi");
+}
+
+function kameraAc(){
+
+scanner = new Html5Qrcode("reader");
+
+scanner.start(
+{ facingMode: "environment" },
+{ fps: 10, qrbox: 250 },
+qrCodeMessage => {
+alert("QR: "+qrCodeMessage);
+scanner.stop();
+}
+);
+}
+
+function kameraKapat(){
+if(scanner){
+scanner.stop();
+}
+}
+
+listeYukle();
 
 </script>
-
-</body>
-</html>
