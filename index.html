@@ -9,20 +9,19 @@
 <style>
 body{
 margin:0;
-font-family: 'Segoe UI';
+font-family:Segoe UI;
 background:linear-gradient(135deg,#2e7d32,#66bb6a);
-color:#333;
 }
 
 .header{
-padding:20px;
 color:white;
+padding:20px;
 font-size:22px;
 font-weight:bold;
 }
 
 .content{
-background:#f5f7fa;
+background:#f4f6f9;
 border-radius:25px 25px 0 0;
 padding:20px;
 min-height:80vh;
@@ -44,7 +43,7 @@ align-items:center;
 
 .stat h1{
 margin:0;
-font-size:28px;
+font-size:26px;
 }
 
 input,select{
@@ -64,10 +63,6 @@ background:#2e7d32;
 color:white;
 font-weight:bold;
 margin-top:10px;
-}
-
-button.danger{
-background:#c62828;
 }
 
 .list-item{
@@ -101,16 +96,23 @@ box-shadow:0 -4px 10px rgba(0,0,0,0.1);
 .nav button{
 background:none;
 color:#2e7d32;
-font-size:14px;
 border:none;
+font-size:14px;
 }
 
-#reader{
-display:none;
-}
+.hidden{display:none;}
 
-.hidden{
+#qrModal{
 display:none;
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0.7);
+z-index:9999;
+justify-content:center;
+align-items:center;
 }
 </style>
 </head>
@@ -132,9 +134,7 @@ display:none;
 
 </div>
 
-
 <div id="eklePanel" class="hidden">
-
 <div class="card">
 <h3>Yeni Hayvan Ekle</h3>
 
@@ -160,11 +160,8 @@ Tür
 <input id="kilo" type="number">
 
 <button onclick="hayvanEkle()">Kaydet</button>
-
 </div>
-
 </div>
-
 
 <div id="listePanel" class="hidden">
 <div class="card">
@@ -173,10 +170,7 @@ Tür
 </div>
 </div>
 
-<div id="reader"></div>
-
 </div>
-
 
 <div class="nav">
 <button onclick="goster('dashboard')">🏠 Ana</button>
@@ -185,12 +179,19 @@ Tür
 <button onclick="kameraAc()">📷 QR</button>
 </div>
 
+<div id="qrModal">
+<div style="background:white;padding:15px;border-radius:15px;width:90%;max-width:400px;">
+<h3>QR Okut</h3>
+<div id="reader" style="width:100%;"></div>
+<button onclick="qrKapat()" style="background:#c62828;">Kapat</button>
+</div>
+</div>
+
 <script>
 
 const API="https://script.google.com/macros/s/AKfycbx5NQWC4SCFUKH7iEkG6LYmYZ7kGjN6oV8hUynzuU1PNAO8lUQ-o8zz0zO_6ZEUU6VR/exec";
 
 function goster(panel){
-
 dashboard.classList.add("hidden");
 eklePanel.classList.add("hidden");
 listePanel.classList.add("hidden");
@@ -198,7 +199,6 @@ listePanel.classList.add("hidden");
 if(panel=="dashboard") dashboard.classList.remove("hidden");
 if(panel=="ekle") eklePanel.classList.remove("hidden");
 if(panel=="liste"){ listePanel.classList.remove("hidden"); listeYukle(); }
-
 }
 
 async function dashboardYukle(){
@@ -261,7 +261,6 @@ const data=await r.json();
 let html="";
 
 data.forEach(h=>{
-
 html+=`
 <div class="list-item">
 <b>${h.Tur}</b> - ${h.KupeNo}<br>
@@ -273,28 +272,31 @@ html+=`
 document.getElementById("liste").innerHTML=html;
 }
 
-let scanner;
+let qrScanner=null;
 
 function kameraAc(){
-document.getElementById("reader").style.display="block";
-scanner=new Html5Qrcode("reader");
+document.getElementById("qrModal").style.display="flex";
 
-scanner.start(
+qrScanner=new Html5Qrcode("reader");
+
+qrScanner.start(
 {facingMode:"environment"},
 {fps:10,qrbox:250},
 msg=>{
-alert("QR Okundu: "+msg);
-scanner.stop();
-reader.style.display="none";
+qr.value=msg;
+qrKapat();
 }
 );
 }
 
-function kameraKapat(){
-if(scanner){
-scanner.stop();
-reader.style.display="none";
+function qrKapat(){
+if(qrScanner){
+qrScanner.stop().then(()=>{
+qrScanner.clear();
+qrScanner=null;
+});
 }
+document.getElementById("qrModal").style.display="none";
 }
 
 dashboardYukle();
