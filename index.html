@@ -157,7 +157,7 @@ Kesim: <b id="kesimSayisi">0</b>
 
 <script>
 
-const API="https://script.google.com/macros/s/AKfycbyPXnjIWS-s5DONtsnL39jXIltrxrOKPjm1beTTUF8SAVpbpZ_cTZlfXmvvqfivQY2-/exec";
+const API="https://script.google.com/macros/s/AKfycbzq6Pl6M8FS-gBXJyBPXLfalmHbqSx6grZd32nGgn8c8ZZs_NT8yBFCz4Sw1N-H8KRU/exec";
 let tumListe=[];
 
 async function verileriYukle(){
@@ -237,16 +237,11 @@ return;
 }
 
 await fetch(API,{
-method:"POST",
-headers:{"Content-Type":"application/json"},
-body:JSON.stringify({
-tip:"ekle",
-Tur:tur,
-KupeNo:kupe,
-QR_ID:document.getElementById("qr").value,
-IlkKilo:document.getElementById("ilkKilo").value
-})
+  method:"POST",
+  headers:{"Content-Type":"application/json"},
+  body:JSON.stringify({tip:"liste"})
 });
+
 
 verileriYukle();
 }
