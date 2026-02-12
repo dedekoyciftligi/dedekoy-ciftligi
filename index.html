@@ -1,55 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dedeköy Çiftliği</title>
 <script src="https://unpkg.com/html5-qrcode"></script>
 
 <style>
 body{
 margin:0;
-font-family:Segoe UI;
-background:#f3f5f7;
+font-family: 'Segoe UI';
+background:linear-gradient(135deg,#2e7d32,#66bb6a);
+color:#333;
 }
 
-header{
-background:#1e3a34;
+.header{
+padding:20px;
 color:white;
-padding:18px;
 font-size:22px;
-font-weight:600;
+font-weight:bold;
 }
 
-.container{padding:20px;}
-
-.top-cards{
-display:grid;
-grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
-gap:15px;
-margin-bottom:20px;
+.content{
+background:#f5f7fa;
+border-radius:25px 25px 0 0;
+padding:20px;
+min-height:80vh;
 }
 
 .card{
 background:white;
-padding:18px;
-border-radius:14px;
-box-shadow:0 4px 12px rgba(0,0,0,0.08);
+padding:15px;
+border-radius:15px;
+margin-bottom:15px;
+box-shadow:0 6px 15px rgba(0,0,0,0.1);
 }
 
-.card h3{margin:0;font-size:16px;color:#555;}
-.card h1{margin:5px 0 0;font-size:28px;}
+.stat{
+display:flex;
+justify-content:space-between;
+align-items:center;
+}
 
-.section{
-background:white;
-padding:15px;
-border-radius:14px;
-box-shadow:0 4px 12px rgba(0,0,0,0.08);
-margin-bottom:20px;
+.stat h1{
+margin:0;
+font-size:28px;
+}
+
+input,select{
+width:100%;
+padding:10px;
+margin-top:6px;
+border-radius:8px;
+border:1px solid #ddd;
+}
+
+button{
+width:100%;
+padding:12px;
+border:none;
+border-radius:10px;
+background:#2e7d32;
+color:white;
+font-weight:bold;
+margin-top:10px;
+}
+
+button.danger{
+background:#c62828;
 }
 
 .list-item{
 padding:12px;
 border-bottom:1px solid #eee;
 cursor:pointer;
-}
-
-.list-item:hover{
-background:#f9f9f9;
 }
 
 .badge{
@@ -59,224 +83,223 @@ font-size:12px;
 color:white;
 }
 
-.aktif{background:#2e7d32;}
-.kesim{background:#c62828;}
+.aktif{background:#43a047;}
+.kesim{background:#e53935;}
 
-button{
-padding:10px 15px;
-border:none;
-border-radius:8px;
-background:#1e3a34;
-color:white;
-cursor:pointer;
-margin-right:6px;
-}
-
-button:hover{opacity:0.9;}
-
-#modal{
+.nav{
 position:fixed;
-top:0;left:0;
-width:100%;height:100%;
-background:rgba(0,0,0,0.5);
-display:none;
-justify-content:center;
-align-items:center;
-}
-
-.modal-box{
+bottom:0;
+left:0;
+width:100%;
 background:white;
-padding:20px;
-width:350px;
-border-radius:12px;
+display:flex;
+justify-content:space-around;
+padding:10px 0;
+box-shadow:0 -4px 10px rgba(0,0,0,0.1);
 }
 
+.nav button{
+background:none;
+color:#2e7d32;
+font-size:14px;
+border:none;
+}
+
+#reader{
+display:none;
+}
+
+.hidden{
+display:none;
+}
 </style>
+</head>
 
-<header>DEDEKÖY ÇİFTLİĞİ</header>
+<body>
 
-<div class="container">
+<div class="header">🐄 Dedeköy Çiftliği</div>
 
-<div style="margin-bottom:15px;">
-<button onclick="listeYukle()">🔄 Yenile</button>
-<button onclick="kameraAc()">📷 QR Oku</button>
-<button onclick="kameraKapat()">❌ QR Kapat</button>
-</div>
+<div class="content">
 
-<div class="top-cards">
-<div class="card">
-<h3>Toplam Hayvan</h3>
+<div id="dashboard">
+
+<div class="card stat">
+<div>Toplam Hayvan</div>
 <h1 id="toplam">0</h1>
 </div>
 
+<div id="turler"></div>
+
+</div>
+
+
+<div id="eklePanel" class="hidden">
+
 <div class="card">
-<h3>Kesime Giden</h3>
-<h1 id="kesimSayisi">0</h1>
-</div>
+<h3>Yeni Hayvan Ekle</h3>
+
+QR
+<input id="qr">
+
+Küpe No
+<input id="kupe">
+
+Tür
+<select id="tur">
+<option value="">Seçiniz</option>
+<option>Kuzu</option>
+<option>Koyun</option>
+<option>Koç</option>
+<option>Dana</option>
+<option>İnek</option>
+<option>Düve</option>
+<option>Boğa</option>
+</select>
+
+İlk Kilo
+<input id="kilo" type="number">
+
+<button onclick="hayvanEkle()">Kaydet</button>
+
 </div>
 
-<div id="turKartlari" class="top-cards"></div>
+</div>
 
-<div class="section">
+
+<div id="listePanel" class="hidden">
+<div class="card">
 <h3>Hayvan Listesi</h3>
 <div id="liste"></div>
 </div>
+</div>
 
-<div class="section" id="reader" style="display:none;"></div>
+<div id="reader"></div>
 
 </div>
 
-<div id="modal">
-<div class="modal-box" id="modalIcerik"></div>
+
+<div class="nav">
+<button onclick="goster('dashboard')">🏠 Ana</button>
+<button onclick="goster('liste')">📋 Liste</button>
+<button onclick="goster('ekle')">➕ Ekle</button>
+<button onclick="kameraAc()">📷 QR</button>
 </div>
 
 <script>
 
 const API="https://script.google.com/macros/s/AKfycbx5NQWC4SCFUKH7iEkG6LYmYZ7kGjN6oV8hUynzuU1PNAO8lUQ-o8zz0zO_6ZEUU6VR/exec";
 
-let scanner;
+function goster(panel){
 
-async function listeYukle(){
+dashboard.classList.add("hidden");
+eklePanel.classList.add("hidden");
+listePanel.classList.add("hidden");
 
-const r=await fetch(API,{
-method:"POST",
-body:JSON.stringify({tip:"liste"})
-});
+if(panel=="dashboard") dashboard.classList.remove("hidden");
+if(panel=="ekle") eklePanel.classList.remove("hidden");
+if(panel=="liste"){ listePanel.classList.remove("hidden"); listeYukle(); }
 
+}
+
+async function dashboardYukle(){
+
+const r=await fetch(API,{method:"POST",body:JSON.stringify({tip:"liste"})});
 const data=await r.json();
 
 let toplam=data.length;
-let kesim=0;
 let turler={};
+
+data.forEach(h=>{
+if(!turler[h.Tur]) turler[h.Tur]=0;
+turler[h.Tur]++;
+});
+
+document.getElementById("toplam").innerText=toplam;
+
+let html="";
+for(let t in turler){
+html+=`
+<div class="card stat">
+<div>${t}</div>
+<h1>${turler[t]}</h1>
+</div>`;
+}
+
+document.getElementById("turler").innerHTML=html;
+}
+
+async function hayvanEkle(){
+
+const r=await fetch(API,{
+method:"POST",
+body:JSON.stringify({
+tip:"hayvanEkle",
+qr:qr.value,
+kupe:kupe.value,
+tur:tur.value,
+kilo:kilo.value
+})
+});
+
+const cevap=await r.json();
+
+if(cevap.hata){
+alert(cevap.hata);
+return;
+}
+
+alert("Kaydedildi");
+goster("dashboard");
+dashboardYukle();
+}
+
+async function listeYukle(){
+
+const r=await fetch(API,{method:"POST",body:JSON.stringify({tip:"liste"})});
+const data=await r.json();
 
 let html="";
 
 data.forEach(h=>{
 
-if(h.Durum=="KESIM") kesim++;
-
-if(!turler[h.Tur]) turler[h.Tur]=0;
-turler[h.Tur]++;
-
 html+=`
-<div class="list-item" onclick="detay('${h.KupeNo}')">
-<b>${h.Tur}</b> - ${h.KupeNo}
-<br>
-İlk: ${h.IlkKilo} kg | Son: ${h.SonKilo} kg
-<br>
-Fark: ${h.KiloFark} kg
-<br>
+<div class="list-item">
+<b>${h.Tur}</b> - ${h.KupeNo}<br>
+İlk: ${h.IlkKilo} | Son: ${h.SonKilo}<br>
 <span class="badge ${h.Durum=='KESIM'?'kesim':'aktif'}">${h.Durum}</span>
-</div>
-`;
+</div>`;
 });
 
 document.getElementById("liste").innerHTML=html;
-document.getElementById("toplam").innerText=toplam;
-document.getElementById("kesimSayisi").innerText=kesim;
-
-let turHtml="";
-for(let t in turler){
-turHtml+=`
-<div class="card">
-<h3>${t}</h3>
-<h1>${turler[t]}</h1>
-</div>
-`;
 }
 
-document.getElementById("turKartlari").innerHTML=turHtml;
-}
-
-function detay(kupe){
-
-document.getElementById("modal").style.display="flex";
-
-document.getElementById("modalIcerik").innerHTML=`
-<h3>Hayvan: ${kupe}</h3>
-
-Yeni Kilo:
-<input id="yeniKilo" type="number"><br><br>
-<button onclick="kiloGuncelle('${kupe}')">Kilo Güncelle</button>
-
-<br><br>
-
-Son Aşı:
-<input id="sonAsi" type="date"><br>
-Sonraki Aşı:
-<input id="sonrakiAsi" type="date"><br><br>
-<button onclick="asiGuncelle('${kupe}')">Aşı Güncelle</button>
-
-<br><br>
-
-<button style="background:#c62828" onclick="kesime('${kupe}')">KESİME GÖNDER</button>
-<br><br>
-<button onclick="modalKapat()">Kapat</button>
-`;
-}
-
-function modalKapat(){
-document.getElementById("modal").style.display="none";
-}
-
-async function kiloGuncelle(kupe){
-
-const kilo=document.getElementById("yeniKilo").value;
-
-await fetch(API,{
-method:"POST",
-body:JSON.stringify({tip:"kiloGuncelle",kupe:kupe,kilo:kilo})
-});
-
-listeYukle();
-modalKapat();
-}
-
-async function kesime(kupe){
-
-await fetch(API,{
-method:"POST",
-body:JSON.stringify({tip:"kesimeGonder",kupe:kupe})
-});
-
-listeYukle();
-modalKapat();
-}
-
-async function asiGuncelle(kupe){
-
-await fetch(API,{
-method:"POST",
-body:JSON.stringify({
-tip:"asiGuncelle",
-kupe:kupe,
-sonAsi:document.getElementById("sonAsi").value,
-sonrakiAsi:document.getElementById("sonrakiAsi").value
-})
-});
-
-modalKapat();
-}
+let scanner;
 
 function kameraAc(){
 document.getElementById("reader").style.display="block";
 scanner=new Html5Qrcode("reader");
+
 scanner.start(
 {facingMode:"environment"},
 {fps:10,qrbox:250},
 msg=>{
-alert("QR: "+msg);
+alert("QR Okundu: "+msg);
 scanner.stop();
-});
+reader.style.display="none";
+}
+);
 }
 
 function kameraKapat(){
 if(scanner){
 scanner.stop();
-document.getElementById("reader").style.display="none";
+reader.style.display="none";
 }
 }
 
-listeYukle();
+dashboardYukle();
 
 </script>
+
+</body>
+</html>
