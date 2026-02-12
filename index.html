@@ -4,291 +4,83 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dedeköy Çiftliği</title>
-<script src="https://unpkg.com/html5-qrcode"></script>
 
 <style>
 body{
 margin:0;
 font-family:Segoe UI;
-background:linear-gradient(135deg,#1b5e20,#4caf50);
+background:linear-gradient(135deg,#5d4037,#8d6e63);
 }
 
 .header{
+background:#3e2723;
 color:white;
-padding:18px;
-font-size:20px;
+padding:20px;
+font-size:22px;
 font-weight:bold;
+text-align:center;
 }
 
 .container{
-background:#f4f6f9;
-border-radius:25px 25px 0 0;
-padding:15px;
+background:#efebe9;
+border-radius:30px 30px 0 0;
+padding:20px;
 min-height:85vh;
 }
 
 .card{
 background:white;
-padding:15px;
+padding:20px;
 border-radius:15px;
 margin-bottom:15px;
-box-shadow:0 5px 12px rgba(0,0,0,0.1);
-}
-
-input,select{
-width:100%;
-padding:10px;
-margin-top:6px;
-border-radius:8px;
-border:1px solid #ccc;
+box-shadow:0 5px 15px rgba(0,0,0,0.15);
+text-align:center;
 }
 
 button{
-width:100%;
-padding:12px;
-margin-top:8px;
+padding:12px 20px;
 border:none;
 border-radius:10px;
-background:#2e7d32;
+background:#6d4c41;
 color:white;
 font-weight:bold;
 cursor:pointer;
+margin-top:10px;
 }
 
-button.filter{
-width:auto;
-padding:8px 12px;
-margin:4px 4px 0 0;
-background:#1976d2;
-font-size:13px;
-}
-
-.list-item{
-padding:12px;
-border-radius:10px;
-margin-bottom:8px;
-background:white;
-box-shadow:0 3px 8px rgba(0,0,0,0.08);
-cursor:pointer;
-}
-
-.badge{
-padding:4px 10px;
-border-radius:20px;
-font-size:12px;
-color:white;
-float:right;
-}
-
-.aktif{background:#43a047;}
-.kesim{background:#e53935;}
-
-#modal{
-position:fixed;
-top:0;
-left:0;
-width:100%;
-height:100%;
-background:rgba(0,0,0,0.6);
-display:none;
-justify-content:center;
-align-items:center;
-}
-
-.modal-box{
-background:white;
-padding:20px;
-width:90%;
-max-width:420px;
-border-radius:15px;
+.status{
+font-size:18px;
+font-weight:bold;
+margin-top:10px;
+color:#4e342e;
 }
 </style>
 </head>
 
 <body>
 
-<div class="header">🐄 Dedeköy Çiftliği</div>
+<div class="header">🐄 Dedeköy Çiftliği Yönetim</div>
 
 <div class="container">
 
 <div class="card">
-Toplam: <b id="toplam">0</b> |
-Kesim: <b id="kesimSayisi">0</b>
+<h2>🌾 Sistem Test</h2>
+<div class="status" id="durum">Sistem Aktif</div>
+<button onclick="renkDegistir()">Test Butonu</button>
 </div>
 
-<div class="card">
-<h3>➕ Hayvan Ekle</h3>
-<select id="tur">
-<option value="">Tür Seç</option>
-<option>Kuzu</option>
-<option>Koyun</option>
-<option>Koç</option>
-<option>Dana</option>
-<option>İnek</option>
-<option>Düve</option>
-<option>Boğa</option>
-</select>
-<input id="kupe" placeholder="Küpe No">
-<input id="qr" placeholder="QR ID">
-<input id="ilkKilo" type="number" placeholder="İlk Kilo">
-<button onclick="hayvanEkle()">Kaydet</button>
-</div>
-
-<div class="card">
-<input id="aramaInput" placeholder="Küpe / Tür / QR">
-<button onclick="aramaYap()">Ara</button>
-</div>
-
-<div class="card">
-<h3>Türlere Göre</h3>
-<div id="turFiltre"></div>
-</div>
-
-<div class="card">
-<h3>📋 Liste</h3>
-<div id="liste"></div>
-</div>
-
-</div>
-
-<div id="modal">
-<div class="modal-box" id="modalIcerik"></div>
 </div>
 
 <script>
 
-const API="https://script.google.com/macros/s/AKfycbwvBDRSRuymI-EYyW9oHrZtsuVVOtnvyKFusp39HDzIFRtGi5Ej5Da3vyajKQTEpiLl/exec";
-let tumListe=[];
-
-async function verileriYukle(){
-
-const r=await fetch(API,{
-method:"POST",
-headers:{"Content-Type":"application/json"},
-body:JSON.stringify({tip:"liste"})
-});
-
-tumListe=await r.json();
-
-document.getElementById("toplam").innerText=tumListe.length;
-document.getElementById("kesimSayisi").innerText=
-tumListe.filter(x=>x.Durum=="KESIM").length;
-
-turFiltreOlustur();
-listeRender(tumListe);
+function renkDegistir(){
+document.body.style.background =
+"linear-gradient(135deg,#4e342e,#a1887f)";
+document.getElementById("durum").innerText =
+"Buton Çalışıyor ✔";
 }
-
-function listeRender(data){
-let html="";
-data.forEach(h=>{
-html+=`
-<div class="list-item" onclick="detay('${h.KupeNo}')">
-<b>${h.Tur}</b> - ${h.KupeNo}
-<span class="badge ${h.Durum=='KESIM'?'kesim':'aktif'}">${h.Durum}</span>
-</div>`;
-});
-document.getElementById("liste").innerHTML=html;
-}
-
-function turFiltreOlustur(){
-
-let turSayim={};
-
-tumListe.forEach(h=>{
-turSayim[h.Tur]=(turSayim[h.Tur]||0)+1;
-});
-
-let html=`<button class="filter" onclick="listeRender(tumListe)">Tümü (${tumListe.length})</button>`;
-
-for(let tur in turSayim){
-html+=`<button class="filter" onclick="filtreTur('${tur}')">
-${tur} (${turSayim[tur]})
-</button>`;
-}
-
-document.getElementById("turFiltre").innerHTML=html;
-}
-
-function filtreTur(tur){
-const filtre=tumListe.filter(x=>x.Tur==tur);
-listeRender(filtre);
-}
-
-function aramaYap(){
-const q=document.getElementById("aramaInput").value.toLowerCase();
-
-const filtre=tumListe.filter(h=>
-(h.KupeNo||"").toLowerCase().includes(q) ||
-(h.Tur||"").toLowerCase().includes(q) ||
-(h.QR_ID||"").toLowerCase().includes(q)
-);
-
-listeRender(filtre);
-}
-
-async function hayvanEkle(){
-
-const tur=document.getElementById("tur").value;
-const kupe=document.getElementById("kupe").value;
-
-if(!tur || !kupe){
-alert("Tür ve Küpe zorunlu");
-return;
-}
-
-await fetch(API,{
-  method:"POST",
-  headers:{
-    "Content-Type":"text/plain;charset=utf-8"
-  },
-  body:JSON.stringify({tip:"liste"})
-});
-
-
-
-verileriYukle();
-}
-
-function detay(kupe){
-const h=tumListe.find(x=>x.KupeNo==kupe);
-
-document.getElementById("modal").style.display="flex";
-
-document.getElementById("modalIcerik").innerHTML=`
-<h3>${h.Tur} - ${h.KupeNo}</h3>
-İlk: ${h.IlkKilo} kg<br>
-Son: ${h.SonKilo || h.IlkKilo} kg<br><br>
-<input id="yeniKilo" type="number" placeholder="Yeni Kilo">
-<button onclick="kiloGuncelle('${kupe}')">Kilo Güncelle</button>
-<button onclick="modalKapat()" style="background:#777">Kapat</button>
-`;
-}
-
-function modalKapat(){
-document.getElementById("modal").style.display="none";
-}
-
-async function kiloGuncelle(kupe){
-await fetch(API,{
-method:"POST",
-headers:{"Content-Type":"application/json"},
-body:JSON.stringify({
-tip:"kiloGuncelle",
-kupe:kupe,
-kilo:document.getElementById("yeniKilo").value
-})
-});
-modalKapat();
-verileriYukle();
-}
-
-document.getElementById("aramaInput")
-.addEventListener("keypress",function(e){
-if(e.key==="Enter") aramaYap();
-});
-
-verileriYukle();
 
 </script>
+
 </body>
 </html>
